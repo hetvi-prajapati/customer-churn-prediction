@@ -1,0 +1,5 @@
+SeniorCitizen,tenure,MonthlyCharges,TotalCharges,gender_Male,Partner_Yes,PhoneService_Yes,MultipleLines_No phone service,OnlineSecurity_Yes,OnlineBackup_Yes,DeviceProtection_Yes,TechSupport_Yes,Contract_One year,PaperlessBilling_Yes,PaymentMethod_Electronic check,PaymentMethod_Mailed check,Churn_Yes
+0,1,29.85,29.85,False,True,False,True,False,True,False,False,False,True,True,False,False
+0,34,56.95,1889.5,True,False,True,False,True,False,True,False,True,False,False,True,False
+0,2,53.85,108.15,True,False,True,False,True,True,False,False,False,True,False,True,True
+0,45,42.3,1840.75,True,False,False,True,True,False,True,True,True,False,False,False,False

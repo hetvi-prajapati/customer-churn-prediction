@@ -1,0 +1,600 @@
+{% extends "layout.html" %} {% block content %}
+<style>
+  /* ---------------------------------------------------
+     CONFIG PAGE SPECIFIC STYLES
+     --------------------------------------------------- */
+  .config-header {
+    margin-bottom: 32px;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .config-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .config-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .config-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .config-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+  }
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .metric-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-input);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+  .metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+  }
+  .metric-data h4 {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .metric-data div {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .custom-range {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+    appearance: none;
+    accent-color: var(--accent-main);
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .custom-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.95rem;
+  }
+  .custom-input:focus {
+    outline: none;
+    border-color: var(--accent-main);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .feature-row {
+    margin-bottom: 16px;
+  }
+  .feature-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .bar-bg {
+    width: 100%;
+    height: 10px;
+    background: var(--bg-input);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent-main);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+  .btn-danger {
+    background: white;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 14px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-danger:hover {
+    background: #fef2f2;
+  }
+
+  .pipeline-loader {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--radius-md);
+  }
+  .progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--success);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: 12px;
+  }
+  .alert-warning {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+  .alert-info {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+  .alert-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<div class="config-header">
+  <h1>Model Configuration</h1>
+  <p>
+    Manage deployment settings, tune algorithm hyperparameters, and monitor
+    pipeline health.
+  </p>
+</div>
+
+<div class="grid-3">
+  <div class="metric-box">
+    <div
+      class="metric-icon"
+      style="background: linear-gradient(135deg, #10b981, #059669)"
+    >
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="metric-data">
+      <h4>Active Engine</h4>
+      <div>Random Forest v1.4</div>
+    </div>
+  </div>
+  <div class="metric-box">
+    <div
+      class="metric-icon"
+      style="background: linear-gradient(135deg, #3b82f6, #2563eb)"
+    >
+      <i class="fas fa-bullseye"></i>
+    </div>
+    <div class="metric-data">
+      <h4>Live Data Shape</h4>
+      <div style="font-size: 1.2rem">
+        {{ sys_data.data_shape | default('(Offline)') }}
+      </div>
+    </div>
+  </div>
+  <div class="metric-box">
+    <div
+      class="metric-icon"
+      style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)"
+    >
+      <i class="fas fa-bolt"></i>
+    </div>
+    <div class="metric-data">
+      <h4>Inference Latency</h4>
+      <div>42 ms</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="config-card">
+    <h3 class="card-title">
+      <i class="fas fa-sliders-h" style="color: var(--accent-main)"></i>
+      Algorithm Tuning
+    </h3>
+
+    <div style="margin-bottom: 24px">
+      <div class="input-label">
+        <span>Risk Sensitivity Threshold</span>
+        <span
+          id="thresholdVal"
+          style="color: var(--accent-main); font-weight: 800"
+          >50%</span
+        >
+      </div>
+      <input
+        type="range"
+        class="custom-range"
+        min="10"
+        max="90"
+        value="50"
+        id="thresholdSlider"
+        oninput="updateThreshold()"
+      />
+      <div id="thresholdAlert" class="alert alert-info">
+        <i class="fas fa-info-circle" style="margin-top: 3px"></i>
+        <span
+          ><strong>Balanced Mode:</strong> Equal weight given to False Positives
+          and False Negatives. Ideal for standard retention strategies.</span
+        >
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom: 0">
+      <div>
+        <label class="input-label">N-Estimators (Trees)</label>
+        <input
+          type="number"
+          class="custom-input"
+          value="{{ sys_data.hyperparameters.n_estimators | default('100') }}"
+          readonly
+          style="background: #e2e8f0; cursor: not-allowed"
+        />
+      </div>
+      <div>
+        <label class="input-label">Max Depth</label>
+        <input
+          type="number"
+          class="custom-input"
+          value="{{ sys_data.hyperparameters.max_depth | default('10') }}"
+          readonly
+          style="background: #e2e8f0; cursor: not-allowed"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="config-card">
+    <h3 class="card-title">
+      <i class="fas fa-chart-bar" style="color: #8b5cf6"></i> Feature Importance
+      Vectors
+    </h3>
+    <p
+      style="
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      "
+    >
+      Relative weight of attributes driving the Random Forest decisions.
+    </p>
+    <div class="feature-row">
+      <div class="feature-header">
+        <span>Contract Type (Month-to-Month)</span> <span>34.2%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width: 34.2%; background: #ef4444"></div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-header">
+        <span>Account Tenure</span> <span>28.5%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width: 28.5%; background: #f59e0b"></div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-header">
+        <span>Monthly Charges</span> <span>18.1%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width: 18.1%; background: #3b82f6"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="config-card">
+    <h3 class="card-title">
+      <i class="fas fa-database" style="color: var(--success)"></i> Training
+      Pipeline
+    </h3>
+    <div style="display: flex; gap: 15px; margin-bottom: 20px">
+      <input
+        type="text"
+        class="custom-input"
+        value="data/raw/churn.csv"
+        readonly
+        style="flex-grow: 1"
+      />
+      <button class="btn-danger">
+        <i class="fas fa-upload"></i> Upload CSV
+      </button>
+    </div>
+
+    <p
+      style="
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      "
+    >
+      <i class="fas fa-clock"></i> Last model compilation:
+      <strong style="color: var(--text-primary)"
+        >{{ sys_data.last_trained | default('Pipeline Offline') }}</strong
+      >.
+    </p>
+
+    <button class="btn-primary" id="btnRetrain" onclick="startRetraining()">
+      <i class="fas fa-sync-alt" id="syncIcon"></i> Execute Pipeline Retrain
+    </button>
+
+    <div class="pipeline-loader" id="pipelineLoader">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.85rem;
+          font-weight: 600;
+          font-family: &quot;JetBrains Mono&quot;, monospace;
+        "
+        id="pipelineText"
+      >
+        Connecting to backend server...
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div
+        id="apiError"
+        style="
+          display: none;
+          color: var(--danger);
+          font-size: 0.8rem;
+          margin-top: 10px;
+          font-weight: 700;
+        "
+      ></div>
+    </div>
+  </div>
+
+  <div class="config-card">
+    <h3 class="card-title">
+      <i class="fas fa-code" style="color: var(--text-primary)"></i> Integration
+      API
+    </h3>
+    <p
+      style="
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      "
+    >
+      Use this API key to query the deployed model directly from external CRMs
+      or mobile applications.
+    </p>
+    <label class="input-label">Secret API Key</label>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px">
+      <input
+        type="password"
+        class="custom-input"
+        id="apiKey"
+        value="sk_live_9b3f8a2v7c4m5x1q8w"
+        readonly
+      />
+      <button
+        class="btn-primary"
+        onclick="toggleKey()"
+        style="padding: 12px 16px"
+      >
+        <i class="fas fa-eye" id="eyeIcon"></i>
+      </button>
+      <button
+        class="btn-primary"
+        onclick="copyKey()"
+        style="background: var(--text-primary)"
+      >
+        <i class="fas fa-copy"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateThreshold() {
+    const slider = document.getElementById("thresholdSlider");
+    const valText = document.getElementById("thresholdVal");
+    const alertBox = document.getElementById("thresholdAlert");
+
+    let val = slider.value;
+    valText.innerText = val + "%";
+
+    if (val < 40) {
+      alertBox.className = "alert alert-warning";
+      alertBox.innerHTML =
+        '<i class="fas fa-exclamation-triangle" style="margin-top: 3px;"></i> <span><strong>High Recall Mode:</strong> Model will aggressively flag users as at risk. Expect a higher rate of <strong>False Positives</strong>.</span>';
+    } else if (val > 60) {
+      alertBox.className = "alert alert-warning";
+      alertBox.innerHTML =
+        '<i class="fas fa-exclamation-triangle" style="margin-top: 3px; color: #b45309;"></i> <span><strong>High Precision Mode:</strong> Model requires overwhelming evidence to flag a user. Expect higher <strong>False Negatives</strong>.</span>';
+    } else {
+      alertBox.className = "alert alert-info";
+      alertBox.innerHTML =
+        '<i class="fas fa-info-circle" style="margin-top: 3px;"></i> <span><strong>Balanced Mode:</strong> Equal weight given to False Positives and False Negatives. Ideal for standard retention strategies.</span>';
+    }
+  }
+
+  // REAL ASYNCHRONOUS API CALL
+  async function startRetraining() {
+    const btn = document.getElementById("btnRetrain");
+    const icon = document.getElementById("syncIcon");
+    const loader = document.getElementById("pipelineLoader");
+    const bar = document.getElementById("progressBar");
+    const text = document.getElementById("pipelineText");
+    const errorBox = document.getElementById("apiError");
+
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    icon.classList.add("fa-spin");
+    loader.style.display = "block";
+    errorBox.style.display = "none";
+    bar.style.width = "20%";
+    text.innerText = "Executing background python scripts...";
+
+    try {
+      // Makes a live POST request to your Flask backend
+      const response = await fetch("/api/retrain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      bar.style.width = "70%";
+      text.innerText = "Awaiting model compilation...";
+
+      const data = await response.json();
+
+      if (response.ok) {
+        bar.style.width = "100%";
+        text.innerText = "Training successful! Reloading interface...";
+        text.style.color = "var(--success)";
+
+        // Refresh the page after 2 seconds to show the newly updated Jinja timestamps
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error(data.message || "Unknown server error");
+      }
+    } catch (error) {
+      bar.style.background = "var(--danger)";
+      text.innerText = "Pipeline Execution Failed";
+      text.style.color = "var(--danger)";
+      errorBox.style.display = "block";
+      errorBox.innerText = error.message;
+
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      icon.classList.remove("fa-spin");
+    }
+  }
+
+  function toggleKey() {
+    const input = document.getElementById("apiKey");
+    const icon = document.getElementById("eyeIcon");
+    if (input.type === "password") {
+      input.type = "text";
+      icon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+      input.type = "password";
+      icon.classList.replace("fa-eye-slash", "fa-eye");
+    }
+  }
+
+  function copyKey() {
+    const input = document.getElementById("apiKey");
+    input.type = "text";
+    input.select();
+    document.execCommand("copy");
+    input.type = "password";
+    alert("API Key copied to clipboard!");
+  }
+</script>
+{% endblock %}

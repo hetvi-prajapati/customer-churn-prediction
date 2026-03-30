@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BetterVerse AI | Enterprise Console</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      /* GLOBAL ENTERPRISE DESIGN SYSTEM */
+      :root {
+        --bg-body: #f8fafc;
+        --bg-sidebar: #ffffff;
+        --bg-card: #ffffff;
+        --bg-input: #f1f5f9;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --accent-main: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-glow: rgba(37, 99, 235, 0.25);
+        --success: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md:
+          0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg:
+          0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --radius-lg: 16px;
+        --radius-md: 10px;
+        --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-body);
+        color: var(--text-primary);
+        display: flex;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* --- RESPONSIVE SIDEBAR --- */
+      .sidebar {
+        width: 280px;
+        background: var(--bg-sidebar);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        position: fixed;
+        height: 100vh;
+        z-index: 100;
+        transition: var(--transition);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 40px;
+        letter-spacing: -0.5px;
+      }
+      .brand-icon {
+        background: linear-gradient(135deg, #2563eb, #8b5cf6);
+        color: white;
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 1.2rem;
+      }
+
+      .nav-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--text-secondary);
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        margin-top: 20px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+        transition: var(--transition);
+        margin-bottom: 8px;
+      }
+      .nav-item:hover {
+        background: var(--bg-input);
+        color: var(--accent-main);
+        transform: translateX(4px);
+      }
+      .nav-item.active {
+        background: var(--accent-main);
+        color: white;
+        box-shadow: 0 4px 12px var(--accent-glow);
+      }
+
+      /* --- MAIN WORKSPACE --- */
+      .main-wrapper {
+        flex-grow: 1;
+        margin-left: 280px;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition);
+        width: calc(100% - 280px);
+      }
+
+      .topbar {
+        height: 80px;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+      .breadcrumb {
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+      .breadcrumb span {
+        color: var(--text-primary);
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .content-area {
+        padding: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      /* Mobile Hamburger Menu */
+      .mobile-toggle {
+        display: none;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+      }
+
+      /* --- MOBILE RESPONSIVENESS (The Beast Mode upgrade) --- */
+      @media (max-width: 992px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+        .sidebar.open {
+          transform: translateX(0);
+          box-shadow: var(--shadow-lg);
+        }
+        .main-wrapper {
+          margin-left: 0;
+          width: 100%;
+        }
+        .mobile-toggle {
+          display: block;
+        }
+        .topbar {
+          padding: 0 20px;
+        }
+        .content-area {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar" id="appSidebar">
+      <div class="brand">
+        <i class="fas fa-brain brand-icon"></i> BetterVerse AI
+      </div>
+
+      <div class="nav-label">Main Menu</div>
+      <a
+        href="{{ url_for('overview') }}"
+        class="nav-item {% if request.path == '/overview' %}active{% endif %}"
+        ><i class="fas fa-chart-pie"></i> Overview</a
+      >
+      <a
+        href="{{ url_for('index') }}"
+        class="nav-item {% if request.path == '/' %}active{% endif %}"
+        ><i class="fas fa-bullseye"></i> Churn Predictor</a
+      >
+      <a
+        href="{{ url_for('insights') }}"
+        class="nav-item {% if request.path == '/insights' %}active{% endif %}"
+        ><i class="fas fa-users"></i> Audience Insights</a
+      >
+
+      <div class="nav-label">System Admin</div>
+      <a
+        href="{{ url_for('config') }}"
+        class="nav-item {% if request.path == '/config' %}active{% endif %}"
+        ><i class="fas fa-database"></i> Model Config</a
+      >
+      <a
+        href="{{ url_for('preferences') }}"
+        class="nav-item {% if request.path == '/preferences' %}active{% endif %}"
+        ><i class="fas fa-cog"></i> Preferences</a
+      >
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 15px">
+          <button class="mobile-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            Workspace /
+            <span
+              >{{ request.path.replace('/', '').capitalize() or 'Predictor'
+              }}</span
+            >
+          </div>
+        </div>
+        <div class="user-profile">
+          <span class="hide-mobile">Admin User</span>
+          <div class="avatar">A</div>
+        </div>
+      </header>
+
+      <div class="content-area">{% block content %}{% endblock %}</div>
+    </main>
+
+    <script>
+      // Mobile Sidebar Logic
+      function toggleSidebar() {
+        document.getElementById("appSidebar").classList.toggle("open");
+      }
+    </script>
+  </body>
+</html>
