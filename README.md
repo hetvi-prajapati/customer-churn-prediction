@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BetterVerse AI: Enterprise Customer Retention Intelligence 🚀
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
@@ -49,3 +50,7 @@ CUSTOMER-CHURN-PREDICTION/
     ├── config.html             # ML Pipeline Control Hub
     └── preferences.html        # System Governance & UX
 ```
+=======
+# customer-churn-prediction
+AI/ML project for predicting customer churn using machine learning
+>>>>>>> 8ffe4b4e81f65d48cab7ada128da57d6a4974d3b
