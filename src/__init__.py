@@ -1,2 +1,2 @@
-from src.data_preprocessing import clean_data
-from src.predict import make_prediction
+from src.data_preprocessing import prepare_data
+from src.predict import predict_churn

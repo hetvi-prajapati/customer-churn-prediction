@@ -1,0 +1,302 @@
+{% extends "layout.html" %}
+{% block title %}Customers — ChurnGuard AI{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="fas fa-address-book text-cyan" style="margin-right:10px"></i>Customer Management</h1>
+    <p>Browse, filter, and analyze all {{ total_customers | default(0) | int }} tracked accounts.</p>
+  </div>
+  <div class="d-flex gap-sm ai-center">
+    <button class="btn btn-ghost btn-sm" onclick="exportAllCSV()">
+      <i class="fas fa-download"></i> Export CSV
+    </button>
+    <span class="badge-live">Live Data</span>
+  </div>
+</div>
+
+<!-- Stats pills -->
+<div class="cust-stats mb-md">
+  <span class="cust-stat-pill"><i class="fas fa-users text-cyan"></i> Total: <strong>{{ total_customers | default(0) }}</strong></span>
+  <span class="cust-stat-pill"><i class="fas fa-heart-crack" style="color:var(--danger)"></i> Churned: <strong id="churnedCount">{{ churned_count | default(0) }}</strong></span>
+  <span class="cust-stat-pill"><i class="fas fa-user-check" style="color:var(--success)"></i> Active: <strong id="activeCount">{{ active_count | default(0) }}</strong></span>
+  <span class="cust-stat-pill" id="filteredPill" style="display:none"><i class="fas fa-filter text-cyan"></i> Filtered: <strong id="filteredCount">0</strong></span>
+</div>
+
+<!-- Toolbar -->
+<div class="cust-toolbar">
+  <div class="search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" class="search-input" id="searchInput"
+           placeholder="Search by ID, contract, service..." oninput="applyFilters()" />
+  </div>
+  <select class="filter-select" id="contractFilter" onchange="applyFilters()">
+    <option value="">All Contracts</option>
+    <option>Month-to-month</option>
+    <option>One year</option>
+    <option>Two year</option>
+  </select>
+  <select class="filter-select" id="churnFilter" onchange="applyFilters()">
+    <option value="">All Status</option>
+    <option value="1">Churned</option>
+    <option value="0">Active</option>
+  </select>
+  <select class="filter-select" id="serviceFilter" onchange="applyFilters()">
+    <option value="">All Services</option>
+    <option>DSL</option>
+    <option>Fiber optic</option>
+    <option>No</option>
+  </select>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <div class="table-scroll">
+    <table id="custTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th onclick="sortTable('customerID')" style="cursor:pointer">Customer ID <i class="fas fa-sort text-muted"></i></th>
+          <th onclick="sortTable('Contract')" style="cursor:pointer">Contract <i class="fas fa-sort text-muted"></i></th>
+          <th onclick="sortTable('InternetService')" style="cursor:pointer">Internet <i class="fas fa-sort text-muted"></i></th>
+          <th onclick="sortTable('tenure')" style="cursor:pointer">Tenure <i class="fas fa-sort text-muted"></i></th>
+          <th onclick="sortTable('MonthlyCharges')" style="cursor:pointer">Monthly <i class="fas fa-sort text-muted"></i></th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="custBody">
+        <!-- Populated by JS -->
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">
+          <div class="skeleton skeleton-line w-full" style="height:18px;margin-bottom:8px"></div>
+          <div class="skeleton skeleton-line w-3-4" style="height:18px;margin-bottom:8px"></div>
+          <div class="skeleton skeleton-line w-1-2" style="height:18px"></div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <div class="page-info" id="pageInfo">Loading...</div>
+    <div class="page-btns">
+      <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
+      <div id="pageNumbers"></div>
+      <button class="page-btn" id="nextBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="custModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">
+        <i class="fas fa-user-circle text-cyan"></i>
+        <span id="modalTitle">Customer Details</span>
+      </div>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- Filled dynamically -->
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  let allCustomers = [];
+  let filtered = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 25;
+  let sortKey = '';
+  let sortDir = 1;
+
+  // Load all customers from API
+  async function loadCustomers() {
+    try {
+      const res = await fetch('/api/customers-all');
+      allCustomers = await res.json();
+      filtered = [...allCustomers];
+      renderTable();
+    } catch(e) {
+      document.getElementById('custBody').innerHTML =
+        `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--danger)">
+          <i class="fas fa-exclamation-triangle"></i> Failed to load customers. Is the model trained?
+        </td></tr>`;
+    }
+  }
+
+  function applyFilters() {
+    const search   = document.getElementById('searchInput').value.toLowerCase();
+    const contract = document.getElementById('contractFilter').value;
+    const churn    = document.getElementById('churnFilter').value;
+    const service  = document.getElementById('serviceFilter').value;
+
+    filtered = allCustomers.filter(c => {
+      if (search && !JSON.stringify(c).toLowerCase().includes(search)) return false;
+      if (contract && c.Contract !== contract) return false;
+      if (churn !== '' && String(c.Churn) !== churn) return false;
+      if (service && c.InternetService !== service) return false;
+      return true;
+    });
+
+    const pill = document.getElementById('filteredPill');
+    if (search || contract || churn !== '' || service) {
+      pill.style.display = 'flex';
+      document.getElementById('filteredCount').textContent = filtered.length.toLocaleString();
+    } else {
+      pill.style.display = 'none';
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function sortTable(key) {
+    if (sortKey === key) sortDir *= -1; else sortDir = 1;
+    sortKey = key;
+    filtered.sort((a, b) => {
+      const av = a[key] ?? ''; const bv = b[key] ?? '';
+      return typeof av === 'number' ? (av - bv) * sortDir
+           : String(av).localeCompare(String(bv)) * sortDir;
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const body = document.getElementById('custBody');
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page  = filtered.slice(start, start + PAGE_SIZE);
+
+    if (!page.length) {
+      body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">
+        <i class="fas fa-search" style="font-size:2rem;opacity:0.15;display:block;margin-bottom:12px"></i>
+        No customers match your filters.
+      </td></tr>`;
+      updatePagination();
+      return;
+    }
+
+    body.innerHTML = page.map((c, i) => {
+      const churnBadge = c.Churn == 1
+        ? `<span class="badge badge-danger">Churned</span>`
+        : `<span class="badge badge-success">Active</span>`;
+
+      const internetLabel = {
+        'Fiber optic': '<span class="badge badge-accent">Fiber Optic</span>',
+        'DSL':         '<span class="badge badge-muted">DSL</span>',
+        'No':          '<span class="badge badge-muted">None</span>',
+      }[c.InternetService] || c.InternetService;
+
+      return `<tr onclick="openModal(${start + i})">
+        <td class="text-muted fw-bold">${start + i + 1}</td>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:0.80rem;color:var(--cyan-400)">${c.customerID}</span></td>
+        <td>${c.Contract}</td>
+        <td>${internetLabel}</td>
+        <td class="text-mono">${c.tenure} mos</td>
+        <td class="text-mono">$${parseFloat(c.MonthlyCharges || 0).toFixed(2)}</td>
+        <td>${churnBadge}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openModal(${start + i})">
+            <i class="fas fa-expand-alt"></i>
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    updatePagination();
+  }
+
+  function updatePagination() {
+    const total = filtered.length;
+    const pages = Math.ceil(total / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end   = Math.min(currentPage * PAGE_SIZE, total);
+
+    document.getElementById('pageInfo').textContent =
+      total ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}` : 'No results';
+
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= pages;
+
+    const nums = document.getElementById('pageNumbers');
+    const range = [];
+    for (let i = Math.max(1, currentPage-2); i <= Math.min(pages, currentPage+2); i++) range.push(i);
+    nums.innerHTML = range.map(p =>
+      `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`
+    ).join('');
+  }
+
+  function changePage(dir) { goPage(currentPage + dir); }
+  function goPage(p) {
+    const pages = Math.ceil(filtered.length / PAGE_SIZE);
+    if (p < 1 || p > pages) return;
+    currentPage = p;
+    renderTable();
+    document.querySelector('.table-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function openModal(idx) {
+    const c = filtered[idx];
+    if (!c) return;
+    document.getElementById('modalTitle').textContent = `Customer ${c.customerID}`;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-grid">
+        <div class="modal-field"><div class="modal-field-label">Customer ID</div><div class="modal-field-val text-mono" style="color:var(--cyan-400)">${c.customerID}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Gender</div><div class="modal-field-val">${c.gender}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Senior Citizen</div><div class="modal-field-val">${c.SeniorCitizen == 1 ? 'Yes' : 'No'}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Partner</div><div class="modal-field-val">${c.Partner}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Tenure</div><div class="modal-field-val">${c.tenure} months</div></div>
+        <div class="modal-field"><div class="modal-field-label">Contract</div><div class="modal-field-val">${c.Contract}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Internet Service</div><div class="modal-field-val">${c.InternetService}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Tech Support</div><div class="modal-field-val">${c.TechSupport}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Monthly Charges</div><div class="modal-field-val text-mono">$${parseFloat(c.MonthlyCharges||0).toFixed(2)}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Total Charges</div><div class="modal-field-val text-mono">$${parseFloat(c.TotalCharges||0).toFixed(2)}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Payment Method</div><div class="modal-field-val">${c.PaymentMethod}</div></div>
+        <div class="modal-field"><div class="modal-field-label">Churn Status</div>
+          <div class="modal-field-val">${c.Churn == 1
+            ? '<span class="badge badge-danger">Churned</span>'
+            : '<span class="badge badge-success">Active</span>'}</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:10px">
+          Est. Lifetime Value
+        </div>
+        <div style="font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text-primary)">
+          $${(parseFloat(c.tenure||0) * parseFloat(c.MonthlyCharges||0)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+        </div>
+      </div>`;
+    document.getElementById('custModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('custModal').classList.remove('open'); }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  function exportAllCSV() {
+    const rows = [['#','Customer ID','Gender','Senior','Partner','Tenure','Contract','Internet','Monthly','Total','Churn']];
+    filtered.forEach((c, i) => rows.push([
+      i+1, c.customerID, c.gender, c.SeniorCitizen,
+      c.Partner, c.tenure, c.Contract, c.InternetService,
+      parseFloat(c.MonthlyCharges||0).toFixed(2),
+      parseFloat(c.TotalCharges||0).toFixed(2),
+      c.Churn == 1 ? 'Yes' : 'No'
+    ]));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+      download: 'churnguard_customers_' + new Date().toISOString().slice(0,10) + '.csv'
+    });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('CSV exported successfully!', 'success');
+  }
+
+  loadCustomers();
+</script>
+{% endblock %}

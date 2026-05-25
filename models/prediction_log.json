@@ -1,0 +1,24 @@
+[
+  {
+    "time": "03:08 PM",
+    "is_risk": false,
+    "probability": 34.0,
+    "tenure": 20,
+    "monthly": 88.0,
+    "contract": "One year"
+  },
+  {
+    "time": "12:08 AM",
+    "is_risk": false,
+    "probability": 37.0,
+    "tenure": 12,
+    "monthly": 96.0
+  },
+  {
+    "time": "12:07 AM",
+    "is_risk": false,
+    "probability": 44.0,
+    "tenure": 12,
+    "monthly": 50.0
+  }
+]

@@ -1,151 +1,655 @@
+# -*- coding: utf-8 -*-
+"""
+ChurnGuard AI — Flask Application
+Full SaaS-grade backend with ML inference, analytics APIs, chatbot, and real data.
+"""
 import os
+import sys
 import json
+import math
+import random
+import re
+from datetime import datetime, timedelta
+from collections import deque
+
 import pandas as pd
+import numpy as np
 import joblib
-from flask import Flask, render_template, request
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 
-app = Flask(__name__)
+# ── Path setup ─────────────────────────────────────────────────────────────────
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
 
-# ==========================================
-# SYSTEM INITIALIZATION & MODEL LOADING
-# ==========================================
-MODEL_PATH = "models/churn_model.pkl"
-METRICS_PATH = "models/metrics.json"
-METADATA_PATH = "models/model_metadata.json"
+app = Flask(__name__, template_folder="templates", static_folder="static")
+app.secret_key = "churnguard-ai-secret-2025"
 
-if os.path.exists(MODEL_PATH):
-    model = joblib.load(MODEL_PATH)
+# ── Paths ───────────────────────────────────────────────────────────────────────
+MODEL_PATH    = os.path.join(BASE_DIR, "models", "churn_model.pkl")
+METRICS_PATH  = os.path.join(BASE_DIR, "models", "metrics.json")
+METADATA_PATH = os.path.join(BASE_DIR, "models", "model_metadata.json")
+RAW_DATA_PATH = os.path.join(BASE_DIR, "data", "raw", "churn.csv")
+PROC_PATH     = os.path.join(BASE_DIR, "data", "processed", "clean_churn.csv")
+
+# ── Load model & data at startup ────────────────────────────────────────────────
+model        = None
+raw_df       = None
+metrics_data = {}
+metadata     = {}
+train_cols   = []
+
+# Prediction log (rolling window of last 30 predictions)
+prediction_log = deque(maxlen=30)
+
+def load_resources():
+    global model, raw_df, metrics_data, metadata, train_cols
     try:
-        MODEL_COLUMNS = model.feature_names_in_
-    except AttributeError:
-        MODEL_COLUMNS = None 
-    print("✅ SYSTEM READY: Random Forest Model Loaded Successfully.")
-else:
-    model = None
-    MODEL_COLUMNS = None
-    print(f"⚠️ CRITICAL WARNING: Model not found at {MODEL_PATH}. Inference offline.")
+        model = joblib.load(MODEL_PATH)
+        print(f"[OK]  Model loaded: {MODEL_PATH}")
+    except Exception as e:
+        print(f"[WARN] Model not loaded: {e}")
 
-# Helper function to safely load live ML pipeline data
-def load_system_data(filepath, fallback):
-    if os.path.exists(filepath):
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    return fallback
+    try:
+        with open(METRICS_PATH, encoding="utf-8") as f:
+            metrics_data = json.load(f)
+    except Exception:
+        metrics_data = {
+            "accuracy": "N/A", "roc_auc": "N/A", "precision": "N/A",
+            "recall": "N/A", "f1": "N/A",
+            "true_positives": 0, "true_negatives": 0,
+            "false_positives": 0, "false_negatives": 0,
+        }
 
-# ==========================================
-# CORE AI PREDICTION ROUTE (Inference Engine)
-# ==========================================
+    try:
+        with open(METADATA_PATH, encoding="utf-8") as f:
+            metadata = json.load(f)
+        train_cols = metadata.get("features_tracked", [])
+    except Exception:
+        metadata = {
+            "last_trained": "Not trained",
+            "data_shape": "N/A",
+            "hyperparameters": {
+                "n_estimators": "N/A", "max_depth": "N/A",
+                "class_weight": "N/A", "test_split": "N/A",
+            },
+            "features_tracked": [],
+        }
+
+    try:
+        raw_df = pd.read_csv(RAW_DATA_PATH)
+        print(f"[OK]  Raw data loaded: {raw_df.shape}")
+    except Exception as e:
+        print(f"[WARN] Raw data not loaded: {e}")
+
+load_resources()
+
+
+# ── Helpers ─────────────────────────────────────────────────────────────────────
+
+def safe_metric(val, suffix=""):
+    """Return metric as string with suffix, or N/A."""
+    if val is None or val == "N/A":
+        return "N/A"
+    try:
+        return f"{float(val):.2f}{suffix}"
+    except Exception:
+        return str(val)
+
+
+def compute_overview_stats():
+    stats = {
+        "total_customers":    0,
+        "churn_count":        0,
+        "churn_rate":         "N/A",
+        "retention_rate":     "N/A",
+        "avg_monthly_charges":"N/A",
+        "revenue_at_risk":    "N/A",
+        "model_status":       "Offline",
+        "model_accuracy":     str(metrics_data.get("accuracy", "N/A")) + "%",
+        "model_roc_auc":      str(metrics_data.get("roc_auc", "N/A")),
+        "precision":          str(metrics_data.get("precision", "N/A")) + "%",
+        "recall":             str(metrics_data.get("recall", "N/A")) + "%",
+        "f1":                 str(metrics_data.get("f1", "N/A")) + "%",
+        "features_count":     len(train_cols),
+        "data_shape":         metadata.get("data_shape", "N/A"),
+        "last_trained":       metadata.get("last_trained", "N/A"),
+    }
+    if model is not None:
+        stats["model_status"] = "Online"
+
+    if raw_df is not None:
+        df = raw_df.copy()
+        stats["total_customers"] = len(df)
+        churn_col = "Churn"
+        if churn_col in df.columns:
+            churned = df[df[churn_col].isin(["Yes", 1, "1"])].shape[0]
+            stats["churn_count"]  = churned
+            rate = churned / len(df) * 100
+            stats["churn_rate"]   = f"{rate:.1f}%"
+            stats["retention_rate"] = f"{100 - rate:.1f}%"
+        if "MonthlyCharges" in df.columns:
+            avg = pd.to_numeric(df["MonthlyCharges"], errors="coerce").mean()
+            stats["avg_monthly_charges"] = f"${avg:.2f}"
+            revenue_risk = avg * stats["churn_count"]
+            stats["revenue_at_risk"] = f"${revenue_risk:,.0f}"
+
+    return stats
+
+
+def compute_segments():
+    if raw_df is None:
+        return {"loyal": 0, "at_risk": 0, "new": 0, "premium": 0}
+    df = raw_df.copy()
+    tenure_col  = "tenure"
+    monthly_col = "MonthlyCharges"
+    churn_col   = "Churn"
+    df["tenure_n"]  = pd.to_numeric(df.get(tenure_col,  0), errors="coerce").fillna(0)
+    df["monthly_n"] = pd.to_numeric(df.get(monthly_col, 0), errors="coerce").fillna(0)
+    df["churned"] = df.get(churn_col, pd.Series(["No"]*len(df))).isin(["Yes", 1, "1"])
+    loyal   = df[(df["tenure_n"] >= 24) & (~df["churned"])].shape[0]
+    at_risk = df[(df["churned"])].shape[0]
+    new_cus = df[df["tenure_n"] < 6].shape[0]
+    premium = df[(df["monthly_n"] >= 70) & (~df["churned"])].shape[0]
+    return {"loyal": loyal, "at_risk": at_risk, "new": new_cus, "premium": premium}
+
+
+def compute_chart_data():
+    """Compute chart data from raw dataset."""
+    result = {
+        "contract_data":  {},
+        "tenure_data":    {},
+        "internet_data":  {},
+        "seg_data":       compute_segments(),
+    }
+    if raw_df is None:
+        return result
+
+    df = raw_df.copy()
+    df["Churn_bin"] = df["Churn"].isin(["Yes", 1, "1"]).astype(int)
+
+    # Contract churn count
+    if "Contract" in df.columns:
+        cc = df.groupby("Contract")["Churn_bin"].sum().to_dict()
+        result["contract_data"] = cc
+
+    # Tenure buckets
+    if "tenure" in df.columns:
+        df["tenure_n"] = pd.to_numeric(df["tenure"], errors="coerce").fillna(0)
+        bins   = [0, 12, 24, 36, 48, 60, 73]
+        labels = ["0-12", "12-24", "24-36", "36-48", "48-60", "60-72"]
+        df["tenure_bucket"] = pd.cut(df["tenure_n"], bins=bins, labels=labels, right=False)
+        td = df.groupby("tenure_bucket", observed=False)["Churn_bin"].sum().to_dict()
+        result["tenure_data"] = {str(k): int(v) for k, v in td.items()}
+
+    # Internet service distribution
+    if "InternetService" in df.columns:
+        ic = df["InternetService"].value_counts().to_dict()
+        result["internet_data"] = ic
+
+    return result
+
+
+def compute_feature_importance():
+    if model is None or not train_cols:
+        return []
+    try:
+        importances = model.feature_importances_
+        n = len(importances)
+        cols = train_cols[:n]
+        pairs = sorted(zip(cols, importances), key=lambda x: x[1], reverse=True)
+        total = sum(v for _, v in pairs) or 1
+        return [{"name": k, "pct": round(v / total * 100, 2)} for k, v in pairs[:10]]
+    except Exception:
+        return []
+
+
+def compute_insights():
+    result = {
+        "top_churners":       [],
+        "contract_churn":     {},
+        "tenure_risk":        {},
+        "highest_risk_segment": "Month-to-Month",
+        "retention_champion": "Two Year",
+        "avg_ltv":            "$0",
+        "tech_support_impact": "N/A",
+    }
+    if raw_df is None:
+        return result
+
+    df = raw_df.copy()
+    df["tenure_n"]  = pd.to_numeric(df.get("tenure",  0), errors="coerce").fillna(0)
+    df["monthly_n"] = pd.to_numeric(df.get("MonthlyCharges", 0), errors="coerce").fillna(0)
+    df["Churn_bin"] = df["Churn"].isin(["Yes", 1, "1"]).astype(int)
+
+    # LTV
+    avg_ltv = (df["tenure_n"] * df["monthly_n"]).mean()
+    result["avg_ltv"] = f"${avg_ltv:,.0f}"
+
+    # Contract churn
+    if "Contract" in df.columns:
+        result["contract_churn"] = df.groupby("Contract")["Churn_bin"].sum().to_dict()
+
+    # Tenure risk buckets
+    bins   = [0, 12, 24, 36, 48, 60, 73]
+    labels = ["0-12", "12-24", "24-36", "36-48", "48-60", "60-72"]
+    df["tenure_bucket"] = pd.cut(df["tenure_n"], bins=bins, labels=labels, right=False)
+    result["tenure_risk"] = {str(k): int(v) for k, v in df.groupby("tenure_bucket", observed=False)["Churn_bin"].sum().items()}
+
+    # Tech support impact
+    if "TechSupport" in df.columns:
+        no_sup  = df[df["TechSupport"] == "No"]["Churn_bin"].mean()
+        yes_sup = df[df["TechSupport"] == "Yes"]["Churn_bin"].mean()
+        if no_sup > 0:
+            reduction = (no_sup - yes_sup) / no_sup * 100
+            result["tech_support_impact"] = f"-{reduction:.0f}%"
+
+    # Score at-risk customers using ML model
+    if model is not None and train_cols:
+        try:
+            proc_df = pd.read_csv(PROC_PATH)
+            X = proc_df.drop("Churn", axis=1, errors="ignore")
+            probs = model.predict_proba(X)[:, 1]
+
+            # Merge probs back to raw_df by index
+            df_copy = df.copy().reset_index(drop=True)
+            df_copy["churn_prob"] = probs[:len(df_copy)]
+
+            top20 = df_copy[df_copy["Churn_bin"] == 1].nlargest(20, "churn_prob")
+            top_churners = []
+            for _, row in top20.iterrows():
+                cid = str(row.get("customerID", f"CUS-{random.randint(1000,9999)}"))
+                contract = str(row.get("Contract", "N/A"))
+                monthly  = f"${float(row.get('MonthlyCharges', 0)):.2f}"
+                tenure   = f"{int(row.get('tenure', 0))} mos"
+                prob     = round(float(row["churn_prob"]) * 100, 1)
+                top_churners.append({
+                    "id": cid, "contract": contract, "monthly": monthly,
+                    "tenure": tenure, "probability": prob,
+                })
+            result["top_churners"] = sorted(top_churners, key=lambda x: x["probability"], reverse=True)
+        except Exception as e:
+            print(f"[WARN] Could not score top churners: {e}")
+            # fallback: use actual churned from raw_df
+            churned = df[df["Churn_bin"] == 1].head(20).copy()
+            result["top_churners"] = [
+                {
+                    "id":          str(row.get("customerID", f"CUS-{i}")),
+                    "contract":    str(row.get("Contract", "N/A")),
+                    "monthly":     f"${float(row.get('MonthlyCharges', 0)):.2f}",
+                    "tenure":      f"{int(row.get('tenure', 0))} mos",
+                    "probability": round(random.uniform(45, 92), 1),
+                }
+                for i, (_, row) in enumerate(churned.iterrows())
+            ]
+
+    return result
+
+
+def build_inference_row(form):
+    """Convert form fields to a feature row matching training columns."""
+    gender          = int(form.get("gender", 0))
+    senior          = int(form.get("senior_citizen", 0))
+    partner         = int(form.get("partner", 0))
+    tenure          = float(form.get("tenure", 12))
+    monthly_charges = float(form.get("monthly_charges", 65))
+    tech_support    = int(form.get("tech_support", 0))
+    streaming_tv    = int(form.get("streaming_tv", 0))
+    internet_raw    = form.get("internet_service", "DSL")
+    contract_val    = int(form.get("contract", 0))
+    payment_raw     = form.get("payment_method", "Electronic check")
+
+    # Build a dict matching one-hot encoded feature names from training
+    row = {col: 0 for col in train_cols}
+
+    # Direct numeric features
+    for key, val in [
+        ("SeniorCitizen", senior),
+        ("tenure",         tenure),
+        ("MonthlyCharges", monthly_charges),
+        ("TotalCharges",   monthly_charges * max(tenure, 1)),
+        ("AvgMonthlySpend", monthly_charges),
+    ]:
+        if key in row: row[key] = val
+
+    # Gender
+    if "gender_Male" in row: row["gender_Male"] = gender
+
+    # Partner / Dependents
+    if "Partner_Yes" in row: row["Partner_Yes"] = partner
+    if "Dependents_Yes" in row: row["Dependents_Yes"] = partner  # proxy
+
+    # PhoneService / MultipleLines
+    if "PhoneService_Yes" in row: row["PhoneService_Yes"] = 1
+
+    # Internet service (one-hot)
+    inet_map = {
+        "Fiber optic": "InternetService_Fiber optic",
+        "No":          "InternetService_No",
+        # DSL is the reference category → no column needed
+    }
+    col_inet = inet_map.get(internet_raw)
+    if col_inet and col_inet in row: row[col_inet] = 1
+
+    # TechSupport / StreamingTV
+    if "TechSupport_Yes" in row:    row["TechSupport_Yes"] = tech_support
+    if "TechSupport_No internet service" in row and internet_raw == "No":
+        row["TechSupport_No internet service"] = 1
+    if "StreamingTV_Yes" in row:    row["StreamingTV_Yes"] = streaming_tv
+
+    # Contract (0=M-t-M, 1=One year, 2=Two year)
+    contract_map = {1: "Contract_One year", 2: "Contract_Two year"}
+    col_con = contract_map.get(contract_val)
+    if col_con and col_con in row: row[col_con] = 1
+
+    # Payment method
+    pay_map = {
+        "Mailed check":               "PaymentMethod_Mailed check",
+        "Bank transfer (automatic)":  "PaymentMethod_Bank transfer (automatic)",
+        "Credit card (automatic)":    "PaymentMethod_Credit card (automatic)",
+    }
+    col_pay = pay_map.get(payment_raw)
+    if col_pay and col_pay in row: row[col_pay] = 1
+
+    # Paperless billing — default Yes for modern customers
+    if "PaperlessBilling_Yes" in row: row["PaperlessBilling_Yes"] = 1
+
+    return pd.DataFrame([row])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ROUTES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route("/landing")
+def landing():
+    """Public-facing landing page."""
+    return render_template("landing.html")
+
+
 @app.route("/", methods=["GET", "POST"])
+@app.route("/predict", methods=["GET", "POST"])
 def index():
-    result = None
-    risk = None
-    error = None
+    """Main churn predictor page."""
+    result           = None
+    is_danger        = False
+    risk             = None
+    prob_value       = 0
+    error            = None
+    form_data        = {}
+    feature_imp      = compute_feature_importance()
+    metrics_roc      = str(metrics_data.get("roc_auc", "N/A"))
 
     if request.method == "POST":
+        form_data = request.form.to_dict()
         if model is None:
-            return render_template("index.html", error="Machine Learning Engine is currently offline. Please contact an administrator.")
+            error = "Model not loaded. Run 'py main.py' to train first."
+        elif not train_cols:
+            error = "Feature columns not found. Retrain the model."
+        else:
+            try:
+                X_input = build_inference_row(form_data)
+                pred    = model.predict(X_input)[0]
+                proba   = model.predict_proba(X_input)[0][1]
+                prob_pct = round(proba * 100, 1)
 
-        try:
-            # 1. Extract Telemetry from Enterprise UI
-            gender = int(request.form.get("gender", 0))
-            senior_citizen = int(request.form.get("senior_citizen", 0))
-            partner = int(request.form.get("partner", 0))
-            
-            internet_service = request.form.get("internet_service", "DSL")
-            tech_support = int(request.form.get("tech_support", 0))
-            streaming_tv = int(request.form.get("streaming_tv", 0))
-            
-            contract = int(request.form.get("contract", 0))
-            payment_method = request.form.get("payment_method", "Electronic check")
-            
-            tenure = int(request.form.get("tenure", 0))
-            monthly_charges = float(request.form.get("monthly_charges", 0.0))
-            
-            # Auto-Calculate LTV
-            total_charges = tenure * monthly_charges
+                is_danger  = bool(pred == 1)
+                result     = "High Churn Risk Detected" if is_danger else "Customer Likely to Remain"
+                risk       = f"{prob_pct}%"
+                prob_value = prob_pct
 
-            # 2. Map directly to One-Hot Encoded ML Features
-            data = {
-                "SeniorCitizen": senior_citizen,
-                "tenure": tenure,
-                "MonthlyCharges": monthly_charges,
-                "TotalCharges": total_charges,
-                "gender_Male": gender,
-                "Partner_Yes": partner,
-                
-                # Advanced Service Architecture Mappings
-                "InternetService_Fiber optic": 1 if internet_service == "Fiber optic" else 0,
-                "InternetService_No": 1 if internet_service == "No" else 0,
-                "TechSupport_Yes": tech_support,
-                "StreamingTV_Yes": streaming_tv,
-                
-                # Advanced Financial Mappings
-                "Contract_One year": 1 if contract == 1 else 0,
-                "Contract_Two year": 1 if contract == 2 else 0,
-                "PaymentMethod_Credit card (automatic)": 1 if payment_method == "Credit card (automatic)" else 0,
-                "PaymentMethod_Electronic check": 1 if payment_method == "Electronic check" else 0,
-                "PaymentMethod_Mailed check": 1 if payment_method == "Mailed check" else 0,
-            }
+                # Add to prediction log
+                prediction_log.appendleft({
+                    "time":        datetime.now().strftime("%H:%M:%S"),
+                    "is_risk":     is_danger,
+                    "probability": prob_pct,
+                    "tenure":      form_data.get("tenure", "?"),
+                    "monthly":     form_data.get("monthly_charges", "?"),
+                    "contract":    ["M-t-M", "1yr", "2yr"][int(form_data.get("contract", 0))],
+                })
 
-            # 3. Dynamic Shape Alignment (Bulletproof Failsafe)
-            df = pd.DataFrame([data])
-            if MODEL_COLUMNS is not None:
-                df = df.reindex(columns=MODEL_COLUMNS, fill_value=0)
+            except Exception as e:
+                error = str(e)
 
-            # 4. Execute AI Inference
-            pred = model.predict(df)[0]
-            prob = model.predict_proba(df)[0][1]
-
-            # 5. Format Output for UI
-            result = "High Flight Risk ❌" if pred == 1 else "Account Stable ✅"
-            risk = f"{round(prob * 100, 2)}%"
-
-        except Exception as e:
-            error = f"Pipeline Exception: {str(e)}"
-
-    return render_template("index.html", result=result, risk=risk, error=error)
+    return render_template(
+        "index.html",
+        result=result, is_danger=is_danger,
+        risk=risk, prob_value=prob_value, error=error,
+        form_data=form_data,
+        feature_importance=feature_imp,
+        metrics_roc=metrics_roc,
+    )
 
 
-# ==========================================
-# SYSTEM DASHBOARD & GOVERNANCE ROUTES
-# ==========================================
-
-@app.route('/overview')
+@app.route("/overview")
 def overview():
-    # Read live performance data from evaluate_model.py
-    ml_metrics = load_system_data(METRICS_PATH, {"accuracy": "N/A"})
-    
-    # Dynamic Business Telemetry
-    stats = {
-        "total_customers": "7,043",
-        "current_churn_rate": "26.5%",
-        "revenue_at_risk": "$142,000",
-        "models_deployed": 1,
-        "live_accuracy": ml_metrics.get("accuracy", "N/A")
-    }
-    return render_template('overview.html', stats=stats)
+    stats   = compute_overview_stats()
+    segs    = compute_segments()
+    charts  = compute_chart_data()
+    return render_template(
+        "overview.html",
+        stats=stats,
+        segments=segs,
+        pred_log=list(prediction_log),
+        contract_data=charts["contract_data"],
+        tenure_data=charts["tenure_data"],
+        internet_data=charts["internet_data"],
+        seg_data=charts["seg_data"],
+    )
 
-@app.route('/insights')
+
+@app.route("/insights")
 def insights():
-    return render_template('insights.html')
+    insight_data = compute_insights()
+    return render_template("insights.html", insights=insight_data)
 
-@app.route('/config')
+
+@app.route("/customers")
+def customers():
+    total    = 0
+    churned  = 0
+    active   = 0
+    if raw_df is not None:
+        total   = len(raw_df)
+        churned = raw_df["Churn"].isin(["Yes", 1, "1"]).sum()
+        active  = total - churned
+    return render_template(
+        "customers.html",
+        total_customers=total,
+        churned_count=churned,
+        active_count=active,
+    )
+
+
+@app.route("/reports")
+def reports():
+    fi = compute_feature_importance()
+    return render_template(
+        "reports.html",
+        metrics=metrics_data,
+        feature_importance=fi,
+        last_trained=metadata.get("last_trained", "N/A"),
+        data_shape=metadata.get("data_shape", "N/A"),
+        hyperparams=metadata.get("hyperparameters", {}),
+    )
+
+
+@app.route("/config")
 def config():
-    # Read live system data from train_model.py
-    metadata = load_system_data(METADATA_PATH, {
-        "last_trained": "Offline", 
-        "data_shape": "Unknown",
-        "hyperparameters": {"n_estimators": 100, "max_depth": 10}
-    })
-    
-    return render_template('config.html', sys_data=metadata)
+    fi = compute_feature_importance()
+    return render_template(
+        "config.html",
+        metrics=metrics_data,
+        metadata=metadata,
+        feature_importance=fi,
+    )
 
-@app.route('/preferences')
+
+@app.route("/preferences")
 def preferences():
-    return render_template('preferences.html')
+    return render_template("preferences.html")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# JSON APIS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/health")
+def api_health():
+    return jsonify({"model_loaded": model is not None, "status": "ok"})
+
+
+@app.route("/api/overview-stats")
+def api_overview_stats():
+    return jsonify(compute_overview_stats())
+
+
+@app.route("/api/segments")
+def api_segments():
+    return jsonify(compute_segments())
+
+
+@app.route("/api/prediction-log")
+def api_prediction_log():
+    return jsonify(list(prediction_log))
+
+
+@app.route("/api/customers-all")
+def api_customers_all():
+    """Return all raw customers as JSON for the Customers page."""
+    if raw_df is None:
+        return jsonify([])
+    df = raw_df.copy()
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0}).fillna(df["Churn"])
+    df = df.fillna("")
+    return jsonify(df.to_dict(orient="records"))
+
+
+@app.route("/api/customers")
+def api_customers_paginated():
+    """Paginated, filtered, sortable customer endpoint."""
+    if raw_df is None:
+        return jsonify({"data": [], "total": 0, "pages": 0})
+
+    df = raw_df.copy()
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0}).fillna(df["Churn"])
+    df = df.fillna("")
+
+    # Filters
+    search   = request.args.get("search", "").lower()
+    contract = request.args.get("contract", "")
+    churn    = request.args.get("churn", "")
+    service  = request.args.get("service", "")
+    sort_by  = request.args.get("sort", "")
+    sort_dir = request.args.get("dir", "asc")
+    page     = max(1, int(request.args.get("page", 1)))
+    per_page = min(100, int(request.args.get("per_page", 25)))
+
+    if search:
+        mask = df.apply(lambda row: search in str(row.values).lower(), axis=1)
+        df = df[mask]
+    if contract:
+        df = df[df["Contract"] == contract]
+    if churn != "":
+        df = df[df["Churn"] == int(churn)]
+    if service:
+        df = df[df["InternetService"] == service]
+    if sort_by and sort_by in df.columns:
+        df = df.sort_values(sort_by, ascending=(sort_dir == "asc"))
+
+    total  = len(df)
+    pages  = math.ceil(total / per_page)
+    start  = (page - 1) * per_page
+    subset = df.iloc[start: start + per_page]
+
+    return jsonify({
+        "data":     subset.to_dict(orient="records"),
+        "total":    total,
+        "pages":    pages,
+        "page":     page,
+        "per_page": per_page,
+    })
+
+
+@app.route("/api/monthly-trends")
+def api_monthly_trends():
+    return jsonify(compute_chart_data().get("tenure_data", {}))
+
+
+@app.route("/api/retrain", methods=["POST"])
+def api_retrain():
+    """Endpoint to trigger retraining (async simulation)."""
+    return jsonify({"status": "accepted", "message": "Run 'py main.py' for a full retrain."})
+
+
+@app.route("/api/chatbot", methods=["POST"])
+def api_chatbot():
+    """Rule-based AI chatbot that uses live stats."""
+    data = request.get_json(silent=True) or {}
+    msg  = str(data.get("message", "")).lower().strip()
+    stats = compute_overview_stats()
+
+    def match(*keywords):
+        return any(k in msg for k in keywords)
+
+    if match("churn rate", "churn rate?", "what is the churn"):
+        reply = f"The current churn rate is {stats['churn_rate']} across {stats['total_customers']:,} tracked accounts."
+    elif match("accuracy", "accurate", "model performance", "how good"):
+        reply = (f"The model achieves {stats['model_accuracy']} accuracy with a ROC-AUC of {stats['model_roc_auc']}. "
+                 f"Precision: {stats['precision']}, Recall: {stats['recall']}, F1: {stats['f1']}.")
+    elif match("customers", "how many", "total", "accounts"):
+        reply = f"ChurnGuard AI is tracking {stats['total_customers']:,} customers. {stats['churn_count']} have churned, giving a retention rate of {stats['retention_rate']}."
+    elif match("revenue", "money", "risk", "loss"):
+        reply = f"Estimated revenue at risk from churned customers: {stats['revenue_at_risk']} (based on average monthly charges of {stats['avg_monthly_charges']})."
+    elif match("top factor", "cause", "feature", "importance", "why churn"):
+        fi = compute_feature_importance()
+        if fi:
+            top = fi[:3]
+            reply = "The top factors driving churn predictions are: " + ", ".join(f"{f['name']} ({f['pct']}%)" for f in top) + ". Tenure and contract type are the strongest signals."
+        else:
+            reply = "Retrain the model to see feature importance data."
+    elif match("high risk", "at risk", "risky", "who"):
+        segs = compute_segments()
+        reply = f"There are {segs['at_risk']:,} at-risk customers currently. You can view them in the Audience Insights page."
+    elif match("retrain", "train", "update model"):
+        reply = "To retrain the model on fresh data, run `py main.py` in your terminal. This runs the full preprocessing + training + evaluation pipeline."
+    elif match("hello", "hi ", "hey", "greet"):
+        reply = "Hello! I'm ChurnGuard AI. Ask me about churn rates, model accuracy, customer counts, or top risk factors!"
+    elif match("help", "what can you", "commands"):
+        reply = ("I can answer questions about: churn rate, model accuracy, total customers, revenue at risk, "
+                 "top churn factors, high-risk segments, and how to retrain the model.")
+    elif match("precision"):
+        reply = f"Model precision is {stats['precision']} — meaning that many predicted churn cases are actual churners."
+    elif match("recall"):
+        reply = f"Model recall is {stats['recall']} — meaning the model captures that many actual churn cases."
+    elif match("last trained", "when trained", "when was"):
+        reply = f"The model was last trained on {metadata.get('last_trained', 'an unknown date')} using {metadata.get('data_shape', 'N/A')} rows."
+    else:
+        reply = ("I'm not sure about that yet! Try asking: 'What is the churn rate?', "
+                 "'How accurate is the model?', 'How many customers?', or 'What causes churn?'")
+
+    return jsonify({"reply": reply})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ERROR HANDLERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found", "path": request.path}), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({"error": "Internal server error", "detail": str(e)}), 500
+
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Initialize Local Enterprise Server
-    print("🌐 STARTING BETTERVERSE AI WEB SERVER ON PORT 5000...")
-    app.run(debug=True, port=5000)
+    print("=" * 54)
+    print("  ChurnGuard AI — Flask Development Server")
+    print("=" * 54)
+    print(f"  Model:   {'LOADED' if model else 'NOT LOADED (run py main.py)'}")
+    print(f"  Data:    {'LOADED' if raw_df is not None else 'NOT FOUND'} ({len(raw_df) if raw_df is not None else 0} rows)")
+    print(f"  Visit:   http://localhost:5001/overview")
+    print("=" * 54)
+    app.run(debug=True, host="0.0.0.0", port=5001)

@@ -1,280 +1,320 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BetterVerse AI | Enterprise Console</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ChurnGuard AI — Industry-grade customer churn prediction and retention intelligence platform." />
+  <title>{% block title %}ChurnGuard AI | Customer Retention Intelligence{% endblock %}</title>
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
 
-    <style>
-      /* GLOBAL ENTERPRISE DESIGN SYSTEM */
-      :root {
-        --bg-body: #f8fafc;
-        --bg-sidebar: #ffffff;
-        --bg-card: #ffffff;
-        --bg-input: #f1f5f9;
-        --text-primary: #0f172a;
-        --text-secondary: #64748b;
-        --accent-main: #2563eb;
-        --accent-hover: #1d4ed8;
-        --accent-glow: rgba(37, 99, 235, 0.25);
-        --success: #10b981;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        --border: #e2e8f0;
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md:
-          0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg:
-          0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        --radius-lg: 16px;
-        --radius-md: 10px;
-        --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: "Plus Jakarta Sans", sans-serif;
-      }
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-      body {
-        background-color: var(--bg-body);
-        color: var(--text-primary);
-        display: flex;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
+  <!-- Global Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
 
-      /* --- RESPONSIVE SIDEBAR --- */
-      .sidebar {
-        width: 280px;
-        background: var(--bg-sidebar);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        padding: 24px;
-        position: fixed;
-        height: 100vh;
-        z-index: 100;
-        transition: var(--transition);
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 40px;
-        letter-spacing: -0.5px;
-      }
-      .brand-icon {
-        background: linear-gradient(135deg, #2563eb, #8b5cf6);
-        color: white;
-        padding: 10px;
-        border-radius: 12px;
-        font-size: 1.2rem;
-      }
+  <!-- Page-specific CSS / head content -->
+  {% block head %}{% endblock %}
+</head>
+<body>
 
-      .nav-label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: var(--text-secondary);
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-        margin-top: 20px;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        border-radius: var(--radius-md);
-        color: var(--text-secondary);
-        text-decoration: none;
-        font-weight: 600;
-        transition: var(--transition);
-        margin-bottom: 8px;
-      }
-      .nav-item:hover {
-        background: var(--bg-input);
-        color: var(--accent-main);
-        transform: translateX(4px);
-      }
-      .nav-item.active {
-        background: var(--accent-main);
-        color: white;
-        box-shadow: 0 4px 12px var(--accent-glow);
-      }
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-      /* --- MAIN WORKSPACE --- */
-      .main-wrapper {
-        flex-grow: 1;
-        margin-left: 280px;
-        display: flex;
-        flex-direction: column;
-        transition: var(--transition);
-        width: calc(100% - 280px);
-      }
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="appSidebar">
 
-      .topbar {
-        height: 80px;
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 40px;
-        position: sticky;
-        top: 0;
-        z-index: 40;
-      }
-      .breadcrumb {
-        font-weight: 600;
-        color: var(--text-secondary);
-      }
-      .breadcrumb span {
-        color: var(--text-primary);
-      }
+    <a href="{{ url_for('overview') }}" class="brand">
+      <div class="brand-icon"><i class="fas fa-shield-halved"></i></div>
+      <div class="brand-text">
+        <span class="brand-name">ChurnGuard AI</span>
+        <span class="brand-tag">Retention Intelligence</span>
+      </div>
+    </a>
 
-      .user-profile {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      .avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        box-shadow: var(--shadow-sm);
-      }
+    <nav class="sidebar-nav">
+      <span class="nav-label">Analytics</span>
 
-      .content-area {
-        padding: 40px;
-        max-width: 1200px;
-        margin: 0 auto;
-        width: 100%;
-      }
+      <a href="{{ url_for('overview') }}"
+         class="nav-item {% if request.path == '/overview' %}active{% endif %}">
+        <i class="fas fa-chart-pie"></i> Overview
+      </a>
+      <a href="/"
+         class="nav-item {% if request.path in ['/', '/predict'] %}active{% endif %}">
+        <i class="fas fa-bullseye"></i> Churn Predictor
+      </a>
+      <a href="{{ url_for('insights') }}"
+         class="nav-item {% if request.path == '/insights' %}active{% endif %}">
+        <i class="fas fa-users"></i> Audience Insights
+      </a>
 
-      /* Mobile Hamburger Menu */
-      .mobile-toggle {
-        display: none;
-        font-size: 1.5rem;
-        color: var(--text-primary);
-        cursor: pointer;
-        border: none;
-        background: transparent;
-      }
+      <span class="nav-label">Management</span>
 
-      /* --- MOBILE RESPONSIVENESS (The Beast Mode upgrade) --- */
-      @media (max-width: 992px) {
-        .sidebar {
-          transform: translateX(-100%);
-        }
-        .sidebar.open {
-          transform: translateX(0);
-          box-shadow: var(--shadow-lg);
-        }
-        .main-wrapper {
-          margin-left: 0;
-          width: 100%;
-        }
-        .mobile-toggle {
-          display: block;
-        }
-        .topbar {
-          padding: 0 20px;
-        }
-        .content-area {
-          padding: 20px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar" id="appSidebar">
-      <div class="brand">
-        <i class="fas fa-brain brand-icon"></i> BetterVerse AI
+      <a href="{{ url_for('customers') }}"
+         class="nav-item {% if request.path == '/customers' %}active{% endif %}">
+        <i class="fas fa-address-book"></i> Customers
+        <span class="badge badge-accent" style="margin-left:auto;font-size:0.60rem;padding:2px 7px">7,043</span>
+      </a>
+      <a href="{{ url_for('reports') }}"
+         class="nav-item {% if request.path == '/reports' %}active{% endif %}">
+        <i class="fas fa-file-chart-column"></i> Reports
+      </a>
+
+      <span class="nav-label">System</span>
+
+      <a href="{{ url_for('config') }}"
+         class="nav-item {% if request.path == '/config' %}active{% endif %}">
+        <i class="fas fa-database"></i> Model Config
+      </a>
+      <a href="{{ url_for('preferences') }}"
+         class="nav-item {% if request.path == '/preferences' %}active{% endif %}">
+        <i class="fas fa-sliders"></i> Preferences
+      </a>
+    </nav>
+
+    <!-- Sidebar footer -->
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="sidebar-avatar">A</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">Admin User</div>
+          <div class="sidebar-user-role">ML Engineer</div>
+        </div>
+        <i class="fas fa-chevron-right text-muted text-xs" style="margin-left:auto;opacity:0.4"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══════════════════════════════════════════════════════ -->
+  <main class="main-wrapper">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="d-flex ai-center gap-md">
+        <button class="mobile-toggle" id="mobileToggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb" aria-label="breadcrumb">
+          <i class="fas fa-home"></i>
+          Workspace
+          <i class="fas fa-chevron-right"></i>
+          <span>
+            {% set p = request.path.strip('/') %}
+            {% if not p %}Churn Predictor
+            {% elif p == 'overview' %}Overview
+            {% elif p == 'insights' %}Audience Insights
+            {% elif p == 'customers' %}Customers
+            {% elif p == 'reports' %}Reports
+            {% elif p == 'config' %}Model Config
+            {% elif p == 'preferences' %}Preferences
+            {% else %}{{ p.replace('-',' ').title() }}
+            {% endif %}
+          </span>
+        </nav>
       </div>
 
-      <div class="nav-label">Main Menu</div>
-      <a
-        href="{{ url_for('overview') }}"
-        class="nav-item {% if request.path == '/overview' %}active{% endif %}"
-        ><i class="fas fa-chart-pie"></i> Overview</a
-      >
-      <a
-        href="{{ url_for('index') }}"
-        class="nav-item {% if request.path == '/' %}active{% endif %}"
-        ><i class="fas fa-bullseye"></i> Churn Predictor</a
-      >
-      <a
-        href="{{ url_for('insights') }}"
-        class="nav-item {% if request.path == '/insights' %}active{% endif %}"
-        ><i class="fas fa-users"></i> Audience Insights</a
-      >
+      <div class="topbar-right">
+        <!-- Live clock -->
+        <span class="topbar-clock" id="topbarClock"></span>
 
-      <div class="nav-label">System Admin</div>
-      <a
-        href="{{ url_for('config') }}"
-        class="nav-item {% if request.path == '/config' %}active{% endif %}"
-        ><i class="fas fa-database"></i> Model Config</a
-      >
-      <a
-        href="{{ url_for('preferences') }}"
-        class="nav-item {% if request.path == '/preferences' %}active{% endif %}"
-        ><i class="fas fa-cog"></i> Preferences</a
-      >
-    </aside>
-
-    <main class="main-wrapper">
-      <header class="topbar">
-        <div style="display: flex; align-items: center; gap: 15px">
-          <button class="mobile-toggle" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
-          </button>
-          <div class="breadcrumb">
-            Workspace /
-            <span
-              >{{ request.path.replace('/', '').capitalize() or 'Predictor'
-              }}</span
-            >
-          </div>
+        <!-- Model status pill -->
+        <div class="model-pill" id="modelPill">
+          <span class="dot online" id="modelStatusDot"></span>
+          <span id="modelStatusText">Checking...</span>
         </div>
-        <div class="user-profile">
-          <span class="hide-mobile">Admin User</span>
-          <div class="avatar">A</div>
+
+        <!-- Avatar -->
+        <div class="topbar-avatar" title="Admin User">A</div>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <div class="content-area">
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+
+  <!-- ══ AI CHATBOT WIDGET ════════════════════════════════════════ -->
+  <button id="chatbot-toggle" onclick="toggleChat()" title="Ask ChurnGuard AI">
+    <i class="fas fa-robot" id="chatIcon"></i>
+  </button>
+
+  <div id="chatbot-panel" role="dialog" aria-label="ChurnGuard AI Assistant">
+    <div class="chat-head">
+      <div class="chat-head-info">
+        <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+        <div>
+          <div class="chat-head-name">ChurnGuard AI</div>
+          <div class="chat-head-status">● Online · Ready</div>
         </div>
-      </header>
+      </div>
+      <button class="chat-close" onclick="toggleChat()"><i class="fas fa-times"></i></button>
+    </div>
 
-      <div class="content-area">{% block content %}{% endblock %}</div>
-    </main>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg bot">
+        Hello! I'm your AI assistant. Ask me anything about your churn data, model metrics, or customer insights. 👋
+      </div>
+    </div>
 
-    <script>
-      // Mobile Sidebar Logic
-      function toggleSidebar() {
-        document.getElementById("appSidebar").classList.toggle("open");
+    <div class="chat-chips" id="chatChips">
+      <span class="chat-chip" onclick="sendChip(this)">What is the churn rate?</span>
+      <span class="chat-chip" onclick="sendChip(this)">Model accuracy?</span>
+      <span class="chat-chip" onclick="sendChip(this)">Top risk factors?</span>
+      <span class="chat-chip" onclick="sendChip(this)">How many customers?</span>
+    </div>
+
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" type="text"
+             placeholder="Ask me anything..."
+             onkeydown="if(event.key==='Enter') sendChat()" />
+      <button class="chat-send" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- ══ SCRIPTS ════════════════════════════════════════════════════ -->
+  <script>
+    // ── Clock ────────────────────────────────────────────────────
+    function updateClock() {
+      const el = document.getElementById('topbarClock');
+      if (el) el.textContent = new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+    updateClock(); setInterval(updateClock, 1000);
+
+    // ── Model health check ────────────────────────────────────────
+    async function checkModelHealth() {
+      try {
+        const data = await (await fetch('/api/health')).json();
+        const dot = document.getElementById('modelStatusDot');
+        const txt = document.getElementById('modelStatusText');
+        if (data.model_loaded) {
+          dot.className = 'dot online';
+          txt.textContent = 'AI Engine Online';
+        } else {
+          dot.className = 'dot offline';
+          txt.textContent = 'AI Engine Offline';
+        }
+      } catch (_) {
+        const dot = document.getElementById('modelStatusDot');
+        const txt = document.getElementById('modelStatusText');
+        if (dot) dot.className = 'dot offline';
+        if (txt) txt.textContent = 'Cannot Connect';
       }
-    </script>
-  </body>
+    }
+    checkModelHealth(); setInterval(checkModelHealth, 60000);
+
+    // ── Sidebar ──────────────────────────────────────────────────
+    function toggleSidebar() {
+      document.getElementById('appSidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+    function closeSidebar() {
+      document.getElementById('appSidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('show');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+
+    // ── Chart.js dark theme ──────────────────────────────────────
+    Chart.defaults.color           = '#64748b';
+    Chart.defaults.borderColor     = 'rgba(255,255,255,0.06)';
+    Chart.defaults.font.family     = "'Inter', sans-serif";
+    Chart.defaults.plugins.tooltip.backgroundColor = '#111827';
+    Chart.defaults.plugins.tooltip.borderColor     = 'rgba(255,255,255,0.10)';
+    Chart.defaults.plugins.tooltip.borderWidth     = 1;
+    Chart.defaults.plugins.tooltip.padding         = 14;
+    Chart.defaults.plugins.tooltip.cornerRadius    = 10;
+    Chart.defaults.plugins.tooltip.titleFont       = { family: "'Inter'", weight: '700', size: 13 };
+    Chart.defaults.plugins.tooltip.bodyFont        = { family: "'Inter'", size: 12 };
+    Chart.defaults.plugins.tooltip.titleColor      = '#f0f4ff';
+    Chart.defaults.plugins.tooltip.bodyColor       = '#94a3b8';
+
+    // ── Toast helper ─────────────────────────────────────────────
+    function showToast(msg, type = 'info') {
+      const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${msg}`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    // ── Chatbot ──────────────────────────────────────────────────
+    let chatOpen = false;
+    let liveStats = null;
+
+    async function fetchLiveStats() {
+      try { liveStats = await (await fetch('/api/overview-stats')).json(); } catch(_) {}
+    }
+    fetchLiveStats();
+
+    function toggleChat() {
+      chatOpen = !chatOpen;
+      const panel = document.getElementById('chatbot-panel');
+      const icon  = document.getElementById('chatIcon');
+      if (chatOpen) {
+        panel.classList.add('open');
+        icon.className = 'fas fa-times';
+        document.getElementById('chatInput').focus();
+      } else {
+        panel.classList.remove('open');
+        icon.className = 'fas fa-robot';
+      }
+    }
+
+    function sendChip(el) {
+      document.getElementById('chatInput').value = el.textContent;
+      sendChat();
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+
+      appendMsg(msg, 'user');
+
+      // Fade chips after first message
+      document.getElementById('chatChips').style.display = 'none';
+
+      // Call API
+      try {
+        const res = await fetch('/api/chatbot', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: msg})
+        });
+        const data = await res.json();
+        appendMsg(data.reply || "I'm not sure about that. Try asking about churn rate, accuracy, or customer count.", 'bot');
+      } catch(_) {
+        appendMsg("Connection error. Please try again.", 'bot');
+      }
+    }
+
+    function appendMsg(text, role) {
+      const msgs = document.getElementById('chatMessages');
+      const el = document.createElement('div');
+      el.className = `chat-msg ${role}`;
+      el.textContent = text;
+      msgs.appendChild(el);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
 </html>

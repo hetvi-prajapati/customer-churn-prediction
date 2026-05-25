@@ -1,410 +1,217 @@
-{% extends "layout.html" %} {% block content %}
+{% extends "layout.html" %}
+{% block title %}Preferences — ChurnGuard AI{% endblock %}
 
-<style>
-  /* =========================================================
-       PREFERENCES & GOVERNANCE UI
-       ========================================================= */
-  .settings-container {
-    animation: fadeIn 0.5s ease-out;
-    max-width: 900px;
-  }
+{% block content %}
 
-  .page-header {
-    margin-bottom: 40px;
-  }
-  .page-header h1 {
-    font-size: 2.4rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-  }
-  .page-header p {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-  }
-
-  /* Theme Selection Cards */
-  .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-  .theme-card {
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    padding: 20px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: var(--transition);
-    text-align: center;
-  }
-  .theme-card:hover {
-    border-color: var(--accent-main);
-    transform: translateY(-3px);
-  }
-  .theme-card.active {
-    border-color: var(--accent-main);
-    background: #eff6ff;
-  }
-  .theme-preview {
-    height: 60px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-  }
-
-  /* Preference Sections */
-  .settings-section {
-    background: #fff;
-    padding: 35px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 30px;
-  }
-  .section-title {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--text-primary);
-    margin-bottom: 25px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 15px;
-  }
-
-  /* Row Layouts */
-  .setting-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  .setting-row:last-child {
-    border-bottom: none;
-  }
-  .setting-info {
-    flex: 1;
-    padding-right: 20px;
-  }
-  .setting-info label {
-    font-weight: 700;
-    color: var(--text-primary);
-    font-size: 1rem;
-    margin-bottom: 4px;
-    display: block;
-  }
-  .setting-info span {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-
-  /* Range & Inputs */
-  .sensitivity-slider {
-    width: 100%;
-    height: 8px;
-    border-radius: 5px;
-    background: var(--border);
-    outline: none;
-    -webkit-appearance: none;
-    margin: 15px 0;
-  }
-  .sensitivity-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--accent-main);
-    border: 3px solid #fff;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-  }
-
-  /* Toggle Switch */
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 54px;
-    height: 28px;
-    flex-shrink: 0;
-  }
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  .slider-round {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #cbd5e1;
-    transition: 0.4s;
-    border-radius: 34px;
-  }
-  .slider-round:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-  input:checked + .slider-round {
-    background-color: var(--accent-main);
-  }
-  input:checked + .slider-round:before {
-    transform: translateX(26px);
-  }
-
-  /* Buttons */
-  .action-group {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-    padding-bottom: 50px;
-  }
-  .btn-save {
-    background: var(--text-primary);
-    color: #fff;
-    border: none;
-    padding: 16px 32px;
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition);
-    box-shadow: var(--shadow-md);
-  }
-  .btn-save:hover {
-    background: #1e293b;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 16px 32px;
-    border-radius: var(--radius-md);
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .btn-ghost:hover {
-    background: var(--bg-input);
-    color: var(--danger);
-    border-color: var(--danger);
-  }
-
-  /* Toast Notification */
-  #toast {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: var(--text-primary);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    display: none;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    animation: slideUp 0.3s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-</style>
+<div class="page-header">
+  <div>
+    <h1><i class="fas fa-sliders text-cyan" style="margin-right:10px"></i>Preferences &amp; Settings</h1>
+    <p>Customize your ChurnGuard AI dashboard experience.</p>
+  </div>
+</div>
 
 <div class="settings-container">
-  <header class="page-header">
-    <h1>User Preferences</h1>
-    <p>
-      Manage workspace aesthetics, AI sensitivity, and notification governance.
-    </p>
-  </header>
 
-  <h3
-    style="
-      margin-bottom: 20px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      font-size: 0.8rem;
-      letter-spacing: 1px;
-    "
-  >
-    Workspace Appearance
-  </h3>
-  <div class="theme-grid">
-    <div class="theme-card active">
-      <div class="theme-preview" style="background: #f8fafc"></div>
-      <div style="font-weight: 700">Light White</div>
-    </div>
-    <div
-      class="theme-card"
-      onclick="alert('Dark Mode available in Enterprise Pro v2.0')"
-    >
-      <div class="theme-preview" style="background: #0f172a"></div>
-      <div style="font-weight: 700; color: #64748b">Dark Slate</div>
-    </div>
-    <div class="theme-card">
-      <div
-        class="theme-preview"
-        style="background: linear-gradient(to bottom, #f8fafc 50%, #0f172a 50%)"
-      ></div>
-      <div style="font-weight: 700; color: #64748b">Auto System</div>
-    </div>
-  </div>
-
+  <!-- Theme Selection -->
   <div class="settings-section">
-    <h3 class="section-title">
-      <i class="fas fa-desktop" style="color: var(--accent-main)"></i> Interface
-      Customization
-    </h3>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <label>High-Contrast Mode</label>
-        <span>Optimize text and charts for high visibility environments.</span>
+    <div class="section-title"><i class="fas fa-palette text-cyan"></i> Interface Theme</div>
+    <div class="theme-grid">
+      <div class="theme-card active" id="themeDark" onclick="setTheme('dark', this)">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#0a0e1a,#111827)"></div>
+        <div class="theme-name">Dark Navy</div>
       </div>
-      <label class="switch">
-        <input type="checkbox" />
-        <span class="slider-round"></span>
-      </label>
-    </div>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <label>Compact Dashboard View</label>
-        <span
-          >Decrease element padding to maximize data visualization
-          real-estate.</span
-        >
+      <div class="theme-card" id="themeDeep" onclick="setTheme('deep', this)">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#0a0a0f,#0d0d1a)"></div>
+        <div class="theme-name">Deep Black</div>
       </div>
-      <label class="switch">
-        <input type="checkbox" checked />
-        <span class="slider-round"></span>
-      </label>
-    </div>
-
-    <div class="setting-row">
-      <div class="setting-info">
-        <label>Developer Telemetry</label>
-        <span
-          >Display raw JSON inference response logs in prediction results.</span
-        >
+      <div class="theme-card" id="themeSlate" onclick="setTheme('slate', this)">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#1e293b,#0f172a)"></div>
+        <div class="theme-name">Slate Blue</div>
       </div>
-      <label class="switch">
-        <input type="checkbox" id="devMode" />
-        <span class="slider-round"></span>
-      </label>
+      <div class="theme-card" id="themeLight" onclick="setTheme('light', this)">
+        <div class="theme-preview" style="background:linear-gradient(135deg,#f1f5f9,#e2e8f0);border:1px solid #e2e8f0"></div>
+        <div class="theme-name">Light Mode</div>
+      </div>
     </div>
   </div>
 
+  <!-- General Settings -->
   <div class="settings-section">
-    <h3 class="section-title">
-      <i class="fas fa-brain" style="color: #8b5cf6"></i> Intelligence
-      Governance
-    </h3>
-
-    <div style="margin-bottom: 25px">
-      <label style="font-weight: 700; color: var(--text-primary)"
-        >Global Risk Threshold Sensitivity</label
-      >
-      <p
-        style="
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          margin-bottom: 10px;
-        "
-      >
-        Adjust the probability floor for "High Risk" classification (Currently:
-        <span id="sensVal" style="color: var(--accent-main); font-weight: 800"
-          >50%</span
-        >)
-      </p>
-      <input
-        type="range"
-        class="sensitivity-slider"
-        min="10"
-        max="90"
-        value="50"
-        oninput="
-          document.getElementById('sensVal').innerText = this.value + '%'
-        "
-      />
-    </div>
+    <div class="section-title"><i class="fas fa-gear text-cyan"></i> General Settings</div>
 
     <div class="setting-row">
       <div class="setting-info">
-        <label>Weekly Churn Digests</label>
-        <span
-          >Automated PDF report of all customers flagged as "High Flight
-          Risk."</span
-        >
+        <label>Auto-Refresh Dashboard</label>
+        <span>Automatically refresh overview stats every 30 seconds.</span>
       </div>
       <label class="switch">
-        <input type="checkbox" checked />
+        <input type="checkbox" id="autoRefreshToggle" checked onchange="savePref('autoRefresh', this.checked)" />
         <span class="slider-round"></span>
       </label>
     </div>
 
     <div class="setting-row">
       <div class="setting-info">
-        <label>Real-time Slack/Email Alerts</label>
-        <span
-          >Instantly notify support teams when an account risk exceeds
-          85%.</span
-        >
+        <label>AI Chatbot Widget</label>
+        <span>Show the floating AI assistant chatbot on all pages.</span>
       </div>
       <label class="switch">
-        <input type="checkbox" />
+        <input type="checkbox" id="chatbotToggle" checked onchange="toggleChatbotWidget(this.checked)" />
         <span class="slider-round"></span>
       </label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <label>Animated Counters</label>
+        <span>Animate number counters on dashboard load.</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="animToggle" checked onchange="savePref('animations', this.checked)" />
+        <span class="slider-round"></span>
+      </label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <label>Developer Mode</label>
+        <span>Show raw inference payloads on the Churn Predictor page.</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="devModeToggle" onchange="savePref('devMode', this.checked)" />
+        <span class="slider-round"></span>
+      </label>
+    </div>
+
+  </div>
+
+  <!-- Churn Threshold -->
+  <div class="settings-section">
+    <div class="section-title"><i class="fas fa-sliders text-cyan"></i> AI Sensitivity</div>
+
+    <div class="setting-row" style="flex-direction:column;align-items:flex-start">
+      <div class="setting-info" style="margin-bottom:16px">
+        <label>Risk Threshold (%)
+          <span id="thresholdVal" style="color:var(--cyan-400);font-family:'JetBrains Mono',monospace;font-weight:800;margin-left:8px">50%</span>
+        </label>
+        <span>Customers with churn probability above this value are flagged as "At-Risk".</span>
+      </div>
+      <div class="sensitivity-slider" style="width:100%">
+        <input type="range" id="churnThreshold" min="10" max="90" step="5" value="50"
+          oninput="document.getElementById('thresholdVal').textContent=this.value+'%;savePref(\'threshold\',this.value)'" />
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Profile -->
+  <div class="settings-section">
+    <div class="section-title"><i class="fas fa-user text-cyan"></i> Admin Profile</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" value="Admin User" />
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <input type="text" value="ML Engineer" />
+      </div>
+      <div class="form-group" style="grid-column:span 2">
+        <label>Email</label>
+        <input type="email" value="admin@churnguard.ai" />
+      </div>
     </div>
   </div>
 
+  <!-- Actions -->
   <div class="action-group">
-    <button class="btn-save" onclick="saveSettings()">
-      <i class="fas fa-check-circle"></i> Apply Changes
+    <button class="btn btn-primary" onclick="saveAll()">
+      <i class="fas fa-floppy-disk"></i> Save Preferences
     </button>
-    <button class="btn-ghost" onclick="location.reload()">
-      <i class="fas fa-undo"></i> Reset Defaults
+    <button class="btn btn-ghost" onclick="resetPrefs()">
+      <i class="fas fa-rotate-left"></i> Reset to Defaults
     </button>
+    <a href="/overview" class="btn btn-ghost">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
   </div>
+
 </div>
 
-<div id="toast">
-  <i class="fas fa-info-circle"></i> Configuration Updated Successfully
+<div id="pref-toast" style="display:none">
+  <i class="fas fa-circle-check"></i> <span id="pref-toast-msg"></span>
 </div>
 
+{% endblock %}
+{% block scripts %}
 <script>
-  function saveSettings() {
-    const toast = document.getElementById("toast");
-    toast.style.display = "block";
-    setTimeout(() => {
-      toast.style.display = "none";
-    }, 3000);
+  function savePref(key, val) {
+    localStorage.setItem(key, val);
   }
+  function loadPrefs() {
+    if (localStorage.getItem('devMode') === 'true')
+      document.getElementById('devModeToggle').checked = true;
+    if (localStorage.getItem('autoRefresh') === 'false')
+      document.getElementById('autoRefreshToggle').checked = false;
+    if (localStorage.getItem('animations') === 'false')
+      document.getElementById('animToggle').checked = false;
+    if (localStorage.getItem('chatbotHidden') === 'true')
+      document.getElementById('chatbotToggle').checked = false;
+    const t = localStorage.getItem('threshold');
+    if (t) {
+      document.getElementById('churnThreshold').value = t;
+      document.getElementById('thresholdVal').textContent = t + '%';
+    }
+    const theme = localStorage.getItem('theme') || 'dark';
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+    const active = document.getElementById('theme' + theme.charAt(0).toUpperCase() + theme.slice(1));
+    if (active) active.classList.add('active');
+  }
+  function setTheme(name, card) {
+    document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    localStorage.setItem('theme', name);
+    // Apply CSS variable overrides for themes
+    const root = document.documentElement;
+    if (name === 'light') {
+      root.style.setProperty('--bg-base',  '#f8fafc');
+      root.style.setProperty('--bg-card',  'rgba(255,255,255,0.90)');
+      root.style.setProperty('--text-primary', '#0f172a');
+      root.style.setProperty('--text-secondary', '#475569');
+      root.style.setProperty('--border', 'rgba(0,0,0,0.10)');
+    } else {
+      root.style.setProperty('--bg-base',  name === 'deep' ? '#0a0a0f' : name === 'slate' ? '#0f172a' : '#0a0e1a');
+      root.style.setProperty('--bg-card',  'rgba(17,24,39,0.80)');
+      root.style.setProperty('--text-primary', '#f0f4ff');
+      root.style.setProperty('--text-secondary', '#94a3b8');
+      root.style.setProperty('--border', 'rgba(255,255,255,0.08)');
+    }
+  }
+  function toggleChatbotWidget(show) {
+    const btn = document.getElementById('chatbot-toggle');
+    if (btn) btn.style.display = show ? 'flex' : 'none';
+    localStorage.setItem('chatbotHidden', !show);
+  }
+  function saveAll() {
+    const toast = document.getElementById('pref-toast');
+    document.getElementById('pref-toast-msg').textContent = 'Preferences saved successfully!';
+    toast.style.display = 'flex';
+    setTimeout(() => toast.style.display = 'none', 3000);
+  }
+  function resetPrefs() {
+    ['devMode','autoRefresh','animations','chatbotHidden','threshold','theme'].forEach(k => localStorage.removeItem(k));
+    setTheme('dark', document.getElementById('themeDark'));
+    loadPrefs();
+    const toast = document.getElementById('pref-toast');
+    document.getElementById('pref-toast-msg').textContent = 'Preferences reset to defaults.';
+    toast.style.display = 'flex';
+    setTimeout(() => toast.style.display = 'none', 3000);
+  }
+  document.getElementById('churnThreshold').addEventListener('input', function() {
+    document.getElementById('thresholdVal').textContent = this.value + '%';
+    savePref('threshold', this.value);
+  });
+  loadPrefs();
 </script>
-
 {% endblock %}

@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "wholroyd.jinja",
+    "ms-python.python",
+    "ms-python.black-formatter",
+    "formulahendry.auto-rename-tag",
+    "naumovs.color-highlight",
+    "PKief.material-icon-theme"
+  ]
+}

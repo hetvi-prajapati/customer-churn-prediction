@@ -1,517 +1,242 @@
-{% extends "layout.html" %} {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% extends "layout.html" %}
+{% block title %}Insights — ChurnGuard AI{% endblock %}
 
-<style>
-  /* PAGE SPECIFIC CSS */
-  .insights-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 32px;
-    animation: fadeIn 0.4s ease-out;
-  }
-  .insights-header h1 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-  }
-  .insights-header p {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-  }
+{% block content %}
 
-  .date-filter {
-    background: white;
-    border: 1px solid var(--border);
-    padding: 10px 16px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    box-shadow: var(--shadow-sm);
-  }
-
-  /* KPI Cards */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
-  }
-  .kpi-card {
-    background: var(--bg-card);
-    padding: 24px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  .kpi-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-3px);
-  }
-  .kpi-label {
-    color: var(--text-secondary);
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .kpi-value {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
-  .kpi-trend {
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  /* Charts Section */
-  .chart-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 24px;
-    margin-bottom: 32px;
-  }
-  .chart-card {
-    background: var(--bg-card);
-    padding: 24px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-  }
-  .chart-card h3 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
-  }
-
-  /* Data Table */
-  .table-container {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-  }
-  .table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .table-header h3 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0;
-  }
-  .btn-export {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-  }
-  .btn-export:hover {
-    background: #e2e8f0;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-  }
-  th {
-    padding: 16px 24px;
-    background: var(--bg-input);
-    color: var(--text-secondary);
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
-  td {
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-  tr:last-child td {
-    border-bottom: none;
-  }
-  tr:hover td {
-    background: #f8fafc;
-  }
-
-  /* Table Badges & Micro-bars */
-  .badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  .badge-danger {
-    background: #fef2f2;
-    color: var(--danger);
-  }
-  .badge-warning {
-    background: #fffbeb;
-    color: var(--warning);
-  }
-
-  .prob-bar-bg {
-    width: 100%;
-    height: 6px;
-    background: var(--bg-input);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 6px;
-  }
-  .prob-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-</style>
-
-<div class="insights-header">
+<div class="page-header">
   <div>
-    <h1>Audience Insights</h1>
-    <p>
-      Deep-dive telemetry into customer demographics and ML behavior patterns.
-    </p>
+    <h1><i class="fas fa-users text-cyan" style="margin-right:10px"></i>Audience Insights</h1>
+    <p>ML-powered deep-dive from your real dataset — {{ insights.top_churners | length }} accounts scored.</p>
   </div>
-  <div class="date-filter">
-    <i class="far fa-calendar-alt"></i> Last 30 Days
-    <i
-      class="fas fa-chevron-down"
-      style="font-size: 0.8rem; margin-left: 5px"
-    ></i>
-  </div>
+  <span class="badge-live">Live Analysis</span>
 </div>
 
-<div class="kpi-grid">
-  <div class="kpi-card" style="border-bottom: 4px solid var(--danger)">
-    <div class="kpi-label">
+<!-- Insight KPI cards -->
+<div class="insight-kpis stagger-children">
+
+  <div class="insight-kpi" style="border-top:3px solid var(--danger)">
+    <div class="insight-kpi-label">
       Highest Risk Segment
-      <i class="fas fa-exclamation-circle" style="color: var(--danger)"></i>
+      <i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i>
     </div>
-    <div class="kpi-value" style="color: var(--danger); font-size: 1.6rem">
-      Fiber Optic + Mo2Mo
-    </div>
-    <div class="kpi-trend" style="color: #94a3b8">
-      Accounts in this cohort are 2.4x more likely to churn.
-    </div>
+    <div class="insight-kpi-val text-danger" style="font-size:1.1rem">{{ insights.highest_risk_segment }}</div>
+    <div class="insight-kpi-desc">Most churners originate from this segment.</div>
   </div>
 
-  <div class="kpi-card" style="border-bottom: 4px solid var(--success)">
-    <div class="kpi-label">
+  <div class="insight-kpi" style="border-top:3px solid var(--success)">
+    <div class="insight-kpi-label">
       Retention Champion
-      <i class="fas fa-trophy" style="color: var(--success)"></i>
+      <i class="fas fa-trophy" style="color:var(--success)"></i>
     </div>
-    <div class="kpi-value" style="color: var(--success); font-size: 1.6rem">
-      Two-Year Contract
-    </div>
-    <div class="kpi-trend" style="color: #94a3b8">
-      98.2% historical retention rate over 24 months.
-    </div>
+    <div class="insight-kpi-val text-success" style="font-size:1.1rem">{{ insights.retention_champion }}</div>
+    <div class="insight-kpi-desc">Lowest churn rate contract type.</div>
   </div>
 
-  <div class="kpi-card" style="border-bottom: 4px solid var(--accent-main)">
-    <div class="kpi-label">
-      Avg. Customer LTV
-      <i class="fas fa-wallet" style="color: var(--accent-main)"></i>
+  <div class="insight-kpi" style="border-top:3px solid var(--cyan-500)">
+    <div class="insight-kpi-label">
+      Avg Customer LTV
+      <i class="fas fa-wallet text-cyan"></i>
     </div>
-    <div class="kpi-value" style="color: var(--text-primary)">$2,450.00</div>
-    <div class="kpi-trend" style="color: var(--success)">
-      <i class="fas fa-arrow-up"></i> +4.2% vs last quarter
-    </div>
+    <div class="insight-kpi-val">{{ insights.avg_ltv }}</div>
+    <div class="insight-kpi-desc">Tenure × Monthly Charges per account.</div>
   </div>
 
-  <div class="kpi-card" style="border-bottom: 4px solid var(--warning)">
-    <div class="kpi-label">
+  <div class="insight-kpi" style="border-top:3px solid var(--warning)">
+    <div class="insight-kpi-label">
       Tech Support Impact
-      <i class="fas fa-headset" style="color: var(--warning)"></i>
+      <i class="fas fa-headset" style="color:var(--warning)"></i>
     </div>
-    <div class="kpi-value" style="color: var(--text-primary)">-42% Risk</div>
-    <div class="kpi-trend" style="color: #94a3b8">
-      Users with active IT support churn significantly less.
+    <div class="insight-kpi-val" style="color:var(--warning)">{{ insights.tech_support_impact }}</div>
+    <div class="insight-kpi-desc">Churn reduction for support subscribers.</div>
+  </div>
+
+</div>
+
+<!-- Charts -->
+<div class="chart-row">
+
+  <div class="chart-panel">
+    <div class="chart-panel-head">
+      <div class="chart-panel-title"><i class="fas fa-chart-pie"></i> Churn by Contract</div>
     </div>
+    <div class="chart-panel-body">
+      <div class="chart-box" style="height:260px"><canvas id="contractChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-panel-head">
+      <div class="chart-panel-title"><i class="fas fa-chart-bar"></i> Churned Accounts by Tenure</div>
+    </div>
+    <div class="chart-panel-body">
+      <div class="chart-box" style="height:260px"><canvas id="tenureChart"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Retention strategies -->
+<div class="retention-grid stagger-children mb-lg">
+  <div class="ret-card">
+    <div class="ret-card-icon" style="background:var(--danger-bg);color:var(--danger)"><i class="fas fa-phone-volume"></i></div>
+    <div class="ret-card-title">Immediate Outreach</div>
+    <div class="ret-card-desc">Contact customers with &gt;70% churn probability within 24 hours. Personalized retention call with a tailored offer.</div>
+  </div>
+  <div class="ret-card">
+    <div class="ret-card-icon" style="background:var(--warning-bg);color:var(--warning)"><i class="fas fa-tag"></i></div>
+    <div class="ret-card-title">Discount Offer</div>
+    <div class="ret-card-desc">Offer a 15–20% discount or a free upgrade to at-risk Fiber Optic customers with high monthly charges.</div>
+  </div>
+  <div class="ret-card">
+    <div class="ret-card-icon" style="background:var(--cyan-glow);color:var(--cyan-400)"><i class="fas fa-file-contract"></i></div>
+    <div class="ret-card-title">Contract Upgrade</div>
+    <div class="ret-card-desc">Incentivize month-to-month customers to switch to annual contracts with a first-month-free promotion.</div>
+  </div>
+  <div class="ret-card">
+    <div class="ret-card-icon" style="background:var(--success-bg);color:var(--success)"><i class="fas fa-headset"></i></div>
+    <div class="ret-card-title">Premium Support</div>
+    <div class="ret-card-desc">Add Tech Support subscription for free for 3 months to reduce churn. Data shows 40% lower churn with support.</div>
   </div>
 </div>
 
-<div class="chart-grid">
-  <div class="chart-card">
-    <h3>
-      <i class="fas fa-chart-pie" style="color: var(--accent-main)"></i> Churn
-      by Contract Type
-    </h3>
-    <div class="chart-container">
-      <canvas id="contractChart"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <h3>
-      <i class="fas fa-chart-bar" style="color: var(--success)"></i> At-Risk
-      Accounts by Tenure (Months)
-    </h3>
-    <div class="chart-container">
-      <canvas id="tenureChart"></canvas>
-    </div>
-  </div>
-</div>
-
-<div class="table-container">
+<!-- At-Risk Table -->
+<div class="table-wrap mb-lg">
   <div class="table-header">
-    <h3>
-      <i
-        class="fas fa-clipboard-list"
-        style="color: var(--text-secondary); margin-right: 8px"
-      ></i>
-      Critical Action Ledger (Predicted Churners)
-    </h3>
-    <button class="btn-export" onclick="alert('Simulating CSV Export...')">
-      <i class="fas fa-file-csv"></i> Export Data
+    <h3><i class="fas fa-shield-halved" style="color:var(--danger)"></i> Top At-Risk Accounts (ML Ranked)</h3>
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">
+      <i class="fas fa-download"></i> Export CSV
     </button>
   </div>
-  <div style="overflow-x: auto">
-    <table>
+
+  {% if insights.top_churners %}
+  <div class="table-scroll">
+    <table id="churnTable">
       <thead>
         <tr>
+          <th>#</th>
           <th>Customer ID</th>
           <th>Contract</th>
-          <th>Monthly ($)</th>
+          <th>Monthly</th>
           <th>Tenure</th>
-          <th>ML Probability Risk</th>
-          <th>Action Status</th>
+          <th>AI Risk Score</th>
+          <th>Recommended Action</th>
         </tr>
       </thead>
       <tbody>
+        {% for c in insights.top_churners %}
         <tr>
-          <td><strong>#7590-VHVEG</strong></td>
-          <td>Month-to-month</td>
-          <td>$85.50</td>
-          <td>2 mos</td>
+          <td class="text-muted fw-bold">{{ loop.index }}</td>
+          <td><span class="cid-cell">{{ c.id }}</span></td>
+          <td>{{ c.contract }}</td>
+          <td class="text-mono">{{ c.monthly }}</td>
+          <td>{{ c.tenure }}</td>
           <td>
-            <div style="font-weight: 800; color: var(--danger)">88.4%</div>
-            <div class="prob-bar-bg">
-              <div
-                class="prob-bar-fill"
-                style="width: 88.4%; background: var(--danger)"
-              ></div>
+            <div class="progress-wrap">
+              <div class="progress-pct" style="color:{%if c.probability>=60%}var(--danger){%elif c.probability>=35%}var(--warning){%else%}var(--success){%endif%}">
+                {{ c.probability }}%
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:{{ c.probability }}%;background:{%if c.probability>=60%}var(--danger){%elif c.probability>=35%}var(--warning){%else%}var(--success){%endif%}"></div>
+              </div>
             </div>
           </td>
-          <td><span class="badge badge-danger">Immediate Outreach</span></td>
-        </tr>
-        <tr>
-          <td><strong>#3668-QPYBK</strong></td>
-          <td>Month-to-month</td>
-          <td>$104.15</td>
-          <td>5 mos</td>
           <td>
-            <div style="font-weight: 800; color: var(--danger)">76.2%</div>
-            <div class="prob-bar-bg">
-              <div
-                class="prob-bar-fill"
-                style="width: 76.2%; background: var(--danger)"
-              ></div>
-            </div>
+            {% if c.probability >= 65 %}
+              <span class="badge badge-danger">Immediate Outreach</span>
+            {% elif c.probability >= 35 %}
+              <span class="badge badge-warning">Monitor &amp; Upsell</span>
+            {% else %}
+              <span class="badge badge-success">Loyalty Offer</span>
+            {% endif %}
           </td>
-          <td><span class="badge badge-danger">Offer Discount</span></td>
         </tr>
-        <tr>
-          <td><strong>#9237-HQITU</strong></td>
-          <td>One year</td>
-          <td>$70.00</td>
-          <td>14 mos</td>
-          <td>
-            <div style="font-weight: 800; color: var(--warning)">52.1%</div>
-            <div class="prob-bar-bg">
-              <div
-                class="prob-bar-fill"
-                style="width: 52.1%; background: var(--warning)"
-              ></div>
-            </div>
-          </td>
-          <td><span class="badge badge-warning">Monitor</span></td>
-        </tr>
-        <tr>
-          <td><strong>#5575-GNVDE</strong></td>
-          <td>Month-to-month</td>
-          <td>$56.95</td>
-          <td>8 mos</td>
-          <td>
-            <div style="font-weight: 800; color: var(--warning)">48.9%</div>
-            <div class="prob-bar-bg">
-              <div
-                class="prob-bar-fill"
-                style="width: 48.9%; background: var(--warning)"
-              ></div>
-            </div>
-          </td>
-          <td><span class="badge badge-warning">Upsell Tech Support</span></td>
-        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
+  {% else %}
+  <div class="no-data">
+    <i class="fas fa-robot"></i>
+    <strong>No predictions available.</strong><br>
+    Make sure the model is trained and data exists in <code>data/raw/churn.csv</code>.
+  </div>
+  {% endif %}
 </div>
 
+{% endblock %}
+{% block scripts %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Custom CSS Variables for Charts
-    const dangerColor = "#ef4444";
-    const warningColor = "#f59e0b";
-    const successColor = "#10b981";
-    const primaryColor = "#3b82f6";
-    const secondaryColor = "#8b5cf6";
-    const gridColor = "#e2e8f0";
+  const contractRaw = {{ insights.contract_churn | tojson }};
+  const tenureRaw   = {{ insights.tenure_risk   | tojson }};
 
-    // 1. Donut Chart (Contract Types)
-    const ctxContract = document
-      .getElementById("contractChart")
-      .getContext("2d");
-    new Chart(ctxContract, {
-      type: "doughnut",
+  document.addEventListener('DOMContentLoaded', () => {
+    const CYAN = '#00d4ff', PURPLE = '#8b5cf6', SUCCESS = '#10d98a', DANGER = '#f56565', WARNING = '#f6ad55';
+
+    // Doughnut — contract churn
+    const cVals    = Object.values(contractRaw);
+    const anyChurn = cVals.some(v => v > 0);
+    new Chart(document.getElementById('contractChart'), {
+      type: 'doughnut',
       data: {
-        labels: ["Month-to-Month", "One Year", "Two Year"],
-        datasets: [
-          {
-            data: [88.5, 8.5, 3.0], // Represents churn volume by contract
-            backgroundColor: [dangerColor, warningColor, successColor],
-            borderWidth: 0,
-            hoverOffset: 10,
-          },
-        ],
+        labels: Object.keys(contractRaw),
+        datasets: [{
+          data: anyChurn ? cVals : [1,1,1],
+          backgroundColor: anyChurn
+            ? [DANGER + 'bb', WARNING + 'bb', SUCCESS + 'bb']
+            : ['rgba(255,255,255,0.05)','rgba(255,255,255,0.05)','rgba(255,255,255,0.05)'],
+          borderColor: anyChurn ? [DANGER, WARNING, SUCCESS] : ['var(--border)','var(--border)','var(--border)'],
+          borderWidth: 1.5, hoverOffset: 10,
+        }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "75%",
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
         plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              usePointStyle: true,
-              padding: 20,
-              font: {
-                family: "'Plus Jakarta Sans', sans-serif",
-                weight: "600",
-              },
-            },
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                return context.label + ": " + context.raw + "% of Churners";
-              },
-            },
-          },
-        },
-      },
+          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, boxWidth: 8 } },
+          tooltip: { callbacks: { label: ctx => anyChurn ? ` ${ctx.label}: ${ctx.raw} churned` : ' No churn data yet' } }
+        }
+      }
     });
 
-    // 2. Bar Chart (Tenure Distribution)
-    const ctxTenure = document.getElementById("tenureChart").getContext("2d");
-    new Chart(ctxTenure, {
-      type: "bar",
+    // Bar — tenure
+    const tColors = [DANGER, WARNING, WARNING, '#94a3b8', SUCCESS, SUCCESS];
+    new Chart(document.getElementById('tenureChart'), {
+      type: 'bar',
       data: {
-        labels: [
-          "0-6 mos",
-          "7-12 mos",
-          "13-24 mos",
-          "25-48 mos",
-          "49-60 mos",
-          "60+ mos",
-        ],
-        datasets: [
-          {
-            label: "Number of High-Risk Accounts",
-            data: [850, 420, 210, 95, 40, 15],
-            backgroundColor: primaryColor,
-            borderRadius: 6,
-            barThickness: "flex",
-            maxBarThickness: 40,
-          },
-        ],
+        labels: Object.keys(tenureRaw).map(k => k + ' mos'),
+        datasets: [{
+          label: 'Churned Accounts', data: Object.values(tenureRaw),
+          backgroundColor: tColors.map(c => c + 'bb'),
+          borderColor: tColors, borderWidth: 1.5,
+          borderRadius: 8, borderSkipped: false, maxBarThickness: 56,
+        }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: "#0f172a",
-            titleFont: { family: "'Plus Jakarta Sans', sans-serif" },
-            bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 14 },
-          },
-        },
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} churned` } } },
         scales: {
-          y: {
-            beginAtZero: true,
-            grid: { color: gridColor, drawBorder: false },
-            ticks: {
-              font: {
-                family: "'Plus Jakarta Sans', sans-serif",
-                weight: "500",
-              },
-            },
-          },
-          x: {
-            grid: { display: false },
-            ticks: {
-              font: {
-                family: "'Plus Jakarta Sans', sans-serif",
-                weight: "600",
-              },
-            },
-          },
-        },
-      },
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { precision: 0 } }
+        }
+      }
     });
   });
+
+  function exportCSV() {
+    const rows = [['#','Customer ID','Contract','Monthly','Tenure','Risk %','Action']];
+    document.querySelectorAll('#churnTable tbody tr').forEach((tr, i) => {
+      const td = tr.querySelectorAll('td');
+      const prob   = td[5]?.querySelector('.progress-pct')?.textContent?.trim() || '';
+      const action = td[6]?.querySelector('.badge')?.textContent?.trim() || '';
+      rows.push([i+1, td[1]?.textContent?.trim(), td[2]?.textContent?.trim(),
+                 td[3]?.textContent?.trim(), td[4]?.textContent?.trim(), prob, action]);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+      download: 'at_risk_customers_' + new Date().toISOString().slice(0,10) + '.csv'
+    });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('CSV exported!', 'success');
+  }
 </script>
 {% endblock %}

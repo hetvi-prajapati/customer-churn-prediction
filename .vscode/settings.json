@@ -1,0 +1,62 @@
+{
+  // ── Language associations ───────────────────────────────────────────────────
+  // Treat all Jinja2 HTML templates as Jinja-HTML so the linter understands them
+  "files.associations": {
+    "*.html": "jinja-html"
+  },
+
+  // ── HTML / Jinja validation ─────────────────────────────────────────────────
+  // Disable the built-in HTML validator — it cannot handle Jinja2 syntax
+  "html.validate.scripts": false,
+  "html.validate.styles": false,
+  "html.validate.html": false,
+
+  // ── Emmet inside Jinja templates ────────────────────────────────────────────
+  "emmet.includeLanguages": {
+    "jinja-html": "html"
+  },
+
+  // ── Formatter ───────────────────────────────────────────────────────────────
+  // Use "prettier" for JS/CSS but leave Jinja templates alone (no auto-format)
+  "[jinja-html]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[html]": {
+    "editor.formatOnSave": false
+  },
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true
+  },
+  "[css]": {
+    "editor.formatOnSave": true
+  },
+
+  // ── Python ──────────────────────────────────────────────────────────────────
+  "python.defaultInterpreterPath": "python",
+  "python.analysis.typeCheckingMode": "off",
+
+  // ── Editor UX ───────────────────────────────────────────────────────────────
+  "editor.tabSize": 2,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.linkedEditing": true,
+
+  // ── File exclusions (keep explorer clean) ──────────────────────────────────
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.git": true
+  },
+
+  // ── Search exclusions ────────────────────────────────────────────────────────
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/models/churn_model.pkl": true
+  }
+}

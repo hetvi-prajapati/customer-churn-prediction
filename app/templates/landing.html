@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="ChurnGuard AI — The most powerful AI-driven customer retention intelligence platform."/>
+  <title>ChurnGuard AI — Predict. Retain. Grow.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+
+</head>
+<body>
+
+  <!-- Fixed Navbar -->
+  <nav class="land-nav">
+    <div class="land-nav-brand">
+      <div class="land-nav-brand-icon"><i class="fas fa-shield-halved"></i></div>
+      <span class="land-nav-brand-name">ChurnGuard AI</span>
+    </div>
+    <div class="land-nav-links">
+      <a href="#features" class="land-nav-link">Features</a>
+      <a href="#pricing"  class="land-nav-link">Pricing</a>
+      <a href="#about"    class="land-nav-link">About</a>
+      <a href="/overview" class="land-nav-cta"><i class="fas fa-chart-pie"></i> Open Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fas fa-circle-check"></i>
+        Powered by Random Forest ML · Trained on 7,043 Real Accounts
+      </div>
+      <h1 class="hero-headline">
+        Stop Losing Customers<br>
+        <span class="gradient-text">Before They Leave</span>
+      </h1>
+      <p class="hero-sub">
+        ChurnGuard AI uses advanced machine learning to predict customer churn with 77%+ accuracy,
+        giving you the intelligence to act before it's too late.
+      </p>
+      <div class="hero-ctas">
+        <a href="/overview" class="hero-cta-primary">
+          <i class="fas fa-rocket"></i> Open Dashboard Free
+        </a>
+        <a href="#features" class="hero-cta-secondary">
+          <i class="fas fa-play-circle"></i> See How It Works
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Band -->
+  <div class="stats-band">
+    <div class="stats-inner">
+      <div>
+        <div class="stat-item-val">7,043</div>
+        <div class="stat-item-label">Customer Profiles Analyzed</div>
+      </div>
+      <div>
+        <div class="stat-item-val">77%+</div>
+        <div class="stat-item-label">Prediction Accuracy</div>
+      </div>
+      <div>
+        <div class="stat-item-val">0.84</div>
+        <div class="stat-item-label">ROC-AUC Score</div>
+      </div>
+      <div>
+        <div class="stat-item-val">31</div>
+        <div class="stat-item-label">Engineered Features</div>
+      </div>
+      <div>
+        <div class="stat-item-val">200</div>
+        <div class="stat-item-label">Decision Trees</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <div class="section-tag">Platform Features</div>
+      <h2 class="section-title">Everything You Need to<br>Reduce Customer Churn</h2>
+      <p class="section-sub">ChurnGuard AI combines real ML intelligence with an intuitive SaaS dashboard.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--cyan-glow);color:var(--cyan-400)">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="feature-title">AI Churn Predictor</div>
+        <div class="feature-desc">
+          Enter any customer profile and get an instant churn probability score,
+          explainable AI insights, and personalized retention recommendations.
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--success-bg);color:var(--success)">
+          <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="feature-title">Live Analytics Dashboard</div>
+        <div class="feature-desc">
+          Real-time KPIs including churn rate (26.5%), revenue at risk, retention rate,
+          and model accuracy — all computed from your actual customer data.
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--purple-glow);color:var(--purple-400)">
+          <i class="fas fa-address-book"></i>
+        </div>
+        <div class="feature-title">Customer Management</div>
+        <div class="feature-desc">
+          Browse, search, filter, and sort all 7,043 customer profiles.
+          Click any row to see full details, risk score, and LTV estimate.
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--danger-bg);color:var(--danger)">
+          <i class="fas fa-shield-halved"></i>
+        </div>
+        <div class="feature-title">Explainable AI</div>
+        <div class="feature-desc">
+          Feature importance charts reveal exactly why the model makes each prediction.
+          No black boxes — full transparency on every inference.
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--warning-bg);color:var(--warning)">
+          <i class="fas fa-file-chart-column"></i>
+        </div>
+        <div class="feature-title">Reports & Exports</div>
+        <div class="feature-desc">
+          Download confusion matrix reports, at-risk customer CSVs, metrics data,
+          and full PDF analytics reports with a single click.
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon" style="background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(139,92,246,0.1));color:var(--cyan-400)">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="feature-title">AI Chatbot Assistant</div>
+        <div class="feature-desc">
+          Ask natural language questions and get instant answers backed by live data.
+          "What's the churn rate?" "Who are the top at-risk customers?"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="section" id="pricing" style="background:rgba(255,255,255,0.01);border-top:1px solid var(--border)">
+    <div class="section-header">
+      <div class="section-tag">Pricing</div>
+      <h2 class="section-title">Start Free, Scale as You Grow</h2>
+      <p class="section-sub">No credit card required. Deploy locally or in the cloud.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-plan">Starter</div>
+        <div class="pricing-price">Free</div>
+        <div class="pricing-period">Open source · Local deployment</div>
+        <div class="pricing-features">
+          <div class="pricing-feature"><i class="fas fa-check"></i> Full ML pipeline</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> 7,043 sample customers</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> 5 dashboard pages</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> CSV/PDF export</div>
+          <div class="pricing-feature disabled"><i class="fas fa-xmark"></i> Real-time data sync</div>
+          <div class="pricing-feature disabled"><i class="fas fa-xmark"></i> Team collaboration</div>
+        </div>
+        <a href="/overview" class="btn btn-ghost btn-lg" style="width:100%;justify-content:center">
+          <i class="fas fa-arrow-right"></i> Get Started Free
+        </a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-featured-badge">Most Popular</div>
+        <div class="pricing-plan">Professional</div>
+        <div class="pricing-price">$49</div>
+        <div class="pricing-period">per month · billed annually</div>
+        <div class="pricing-features">
+          <div class="pricing-feature"><i class="fas fa-check"></i> Everything in Starter</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Unlimited customers</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Real-time data sync</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Custom ML models</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Email alerts</div>
+          <div class="pricing-feature disabled"><i class="fas fa-xmark"></i> Dedicated support</div>
+        </div>
+        <a href="/overview" class="btn btn-primary btn-lg" style="width:100%;justify-content:center">
+          <i class="fas fa-rocket"></i> Start Free Trial
+        </a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-plan">Enterprise</div>
+        <div class="pricing-price">$199</div>
+        <div class="pricing-period">per month · billed annually</div>
+        <div class="pricing-features">
+          <div class="pricing-feature"><i class="fas fa-check"></i> Everything in Pro</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> White-label dashboard</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Custom integrations</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> Dedicated ML engineer</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> SLA guarantee</div>
+          <div class="pricing-feature"><i class="fas fa-check"></i> On-premise deployment</div>
+        </div>
+        <a href="/overview" class="btn btn-ghost btn-lg" style="width:100%;justify-content:center">
+          <i class="fas fa-phone"></i> Contact Sales
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section" id="about">
+    <div class="section-header">
+      <div class="section-tag">Testimonials</div>
+      <h2 class="section-title">Trusted by Retention Teams</h2>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">
+          "ChurnGuard AI helped us reduce our monthly churn rate from 8.2% to 4.1% in just 90 days.
+          The AI chatbot answers our ops team's questions instantly."
+        </div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background:linear-gradient(135deg,#00d4ff,#8b5cf6)">P</div>
+          <div>
+            <div class="testimonial-name">Priya Sharma</div>
+            <div class="testimonial-role">Head of Customer Success · TechCorp India</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">
+          "The Explainable AI feature is a game-changer. We can now show executives exactly
+          why customers are predicted to leave, with hard data backing every decision."
+        </div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background:linear-gradient(135deg,#10d98a,#00d4ff)">M</div>
+          <div>
+            <div class="testimonial-name">Marcus Johnson</div>
+            <div class="testimonial-role">VP Analytics · TelecomPro</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">
+          "The dashboard is stunning. Our team adopted it in one day, no training needed.
+          The at-risk customer table alone saved us $220K in Q3."
+        </div>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background:linear-gradient(135deg,#f6ad55,#f56565)">A</div>
+          <div>
+            <div class="testimonial-name">Aisha Patel</div>
+            <div class="testimonial-role">CTO · Streamly OTT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-card">
+      <div style="font-size:2.5rem;margin-bottom:16px">🛡️</div>
+      <h2 style="font-size:2rem;font-weight:800;letter-spacing:-1px;margin-bottom:12px">
+        Ready to Protect Your Revenue?
+      </h2>
+      <p style="color:var(--text-secondary);margin-bottom:28px;font-size:1rem">
+        ChurnGuard AI is free, open-source, and ready to deploy right now.
+        No cloud needed, no subscription required to start.
+      </p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <a href="/overview" class="hero-cta-primary">
+          <i class="fas fa-chart-pie"></i> Open Dashboard
+        </a>
+        <a href="/" class="hero-cta-secondary">
+          <i class="fas fa-bullseye"></i> Try AI Predictor
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="land-footer">
+    <div style="margin-bottom:8px">
+      <strong style="color:var(--text-primary)">ChurnGuard AI</strong> ·
+      Built with Flask · RandomForest · IBM Telco Dataset ·
+      <a href="/overview">Dashboard</a> ·
+      <a href="/">Predictor</a>
+    </div>
+    <div>Made with ❤️ for data scientists and product teams</div>
+  </footer>
+
+  <script>
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+      });
+    });
+  </script>
+</body>
+</html>

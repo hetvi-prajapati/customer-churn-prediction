@@ -1,61 +1,63 @@
+# -*- coding: utf-8 -*-
 import os
+import sys
 import pandas as pd
 import numpy as np
 
+# Force UTF-8 output on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
+BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW_PATH  = os.path.join(BASE_DIR, "data", "raw",       "churn.csv")
+PROC_PATH = os.path.join(BASE_DIR, "data", "processed", "clean_churn.csv")
+
+
 def prepare_data():
-    raw_path = 'data/raw/churn.csv'
-    processed_path = 'data/processed/clean_churn.csv'
-    
-    # 1. Check if the raw data actually exists
-    if not os.path.exists(raw_path):
-        raise FileNotFoundError(
-            f"❌ Error: '{raw_path}' not found! "
-            "Please ensure you have placed the raw Telco customer CSV inside the 'data/raw/' folder."
-        )
+    os.makedirs(os.path.dirname(PROC_PATH), exist_ok=True)
 
-    print("--------------------------------------------------")
-    print("🚀 INITIATING DATA PREPROCESSING PIPELINE...")
-    print("--------------------------------------------------")
-    
-    df = pd.read_csv(raw_path)
-    print(f"Loaded raw data: {df.shape[0]} rows, {df.shape[1]} columns.")
+    print("=" * 48)
+    print("  DATA PREPROCESSING PIPELINE")
+    print("=" * 48)
 
-    # 2. Drop unnecessary columns (IDs don't help prediction)
-    if 'customerID' in df.columns:
-        df = df.drop('customerID', axis=1)
-        print("Dropped 'customerID' column.")
+    df = pd.read_csv(RAW_PATH)
+    print(f"  Loaded raw data  -> shape: {df.shape}")
 
-    # 3. Handle the 'TotalCharges' blank space issue
-    if 'TotalCharges' in df.columns:
-        # Replace empty spaces with NaN, convert to float, fill NaNs with 0
-        df['TotalCharges'] = df['TotalCharges'].replace(r'^\s*$', np.nan, regex=True)
-        df['TotalCharges'] = pd.to_numeric(df['TotalCharges'])
-        df['TotalCharges'] = df['TotalCharges'].fillna(0)
-        print("Sanitized 'TotalCharges' column.")
+    # 1. Drop customerID
+    if "customerID" in df.columns:
+        df = df.drop("customerID", axis=1)
 
-    # 4. Convert the Target Variable strictly to 1 and 0
-    if 'Churn' in df.columns:
-        df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
-        print("Mapped 'Churn' target to binary (1/0).")
+    # 2. TotalCharges -- has whitespace-only strings in IBM dataset
+    df["TotalCharges"] = pd.to_numeric(
+        df["TotalCharges"].astype(str).str.strip().replace("", np.nan),
+        errors="coerce"
+    )
+    mask = df["TotalCharges"].isna()
+    df.loc[mask, "TotalCharges"] = (
+        df.loc[mask, "tenure"] * df.loc[mask, "MonthlyCharges"]
+    )
 
-    # 5. One-Hot Encoding (The Enterprise Fix)
-    # We add dtype=int so pandas outputs 1 and 0 instead of True and False.
-    # This ensures perfect compatibility with our Flask app.py inputs!
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    df_clean = pd.get_dummies(df, columns=categorical_cols, drop_first=True, dtype=int)
-    
-    print("Executed One-Hot Encoding on categorical features.")
+    # 3. Feature engineering
+    df["AvgMonthlySpend"] = df["TotalCharges"] / (df["tenure"].clip(lower=1))
 
-    # 6. Ensure the processed directory exists
-    os.makedirs(os.path.dirname(processed_path), exist_ok=True)
+    # 4. Encode target
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0}).astype(int)
 
-    # 7. Save the fully cleaned, numeric-only dataset
-    df_clean.to_csv(processed_path, index=False)
-    
-    print("--------------------------------------------------")
-    print(f"✅ SUCCESS! Clean data saved to: {processed_path}")
-    print(f"📊 Final pipeline shape ready for ML Training: {df_clean.shape}")
-    print("--------------------------------------------------")
+    # 5. One-hot encode categorical columns
+    cat_cols = df.select_dtypes(include=["object"]).columns.tolist()
+    df = pd.get_dummies(df, columns=cat_cols, drop_first=True, dtype=int)
+
+    # 6. Drop any remaining NaN rows
+    df = df.dropna()
+
+    print(f"  Cleaned data     -> shape: {df.shape}")
+    print(f"  Churn rate       -> {df['Churn'].mean()*100:.1f}%")
+    print(f"  Features         -> {df.shape[1]-1}")
+
+    df.to_csv(PROC_PATH, index=False)
+    print(f"  Saved to         -> {PROC_PATH}")
+    print("=" * 48)
+
 
 if __name__ == "__main__":
     prepare_data()
