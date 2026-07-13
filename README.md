@@ -81,7 +81,34 @@ python app/app.py
 
 ---
 
-## 🏗️ System Architecture
+## 🛑 CORE ARCHITECTURE (THE PIPELINE)
+
+The system is built on a decoupled architecture where the Machine Learning pipeline operates independently of the Flask web server, connected via JSON metadata bridges.
+
+```mermaid
+graph TD
+    subgraph Data Pipeline
+        A[(Raw Data: churn.csv)] --> B[Data Preprocessing<br/>handling missing, encoding]
+        B --> C[Cleaned Data<br/>clean_churn.csv]
+    end
+
+    subgraph Machine Learning Engine
+        C --> D[Model Training<br/>Random Forest]
+        D --> E{Hyperparameter<br/>Tuning}
+        E --> F((Trained Model<br/>churn_model.pkl))
+        D --> G[Model Evaluation<br/>Accuracy, ROC-AUC, F1]
+        G --> H[/Metrics Bridge<br/>metrics.json/]
+    end
+
+    subgraph Web Application Frontend
+        F --> I[Flask Backend API]
+        H --> I
+        I --> J[Jinja2 Dynamic Templates]
+        J --> K[Interactive Dashboard<br/>Chart.js & AI Chatbot]
+    end
+```
+
+### 📂 Directory Structure
 
 ```text
 CUSTOMER-CHURN-PREDICTION/
