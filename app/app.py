@@ -583,51 +583,121 @@ def api_retrain():
 
 @app.route("/api/chatbot", methods=["POST"])
 def api_chatbot():
-    """Rule-based AI chatbot that uses live stats."""
+    """Rule-based AI chatbot that uses live stats, returns actions & markdown."""
     data = request.get_json(silent=True) or {}
     msg  = str(data.get("message", "")).lower().strip()
+    page = str(data.get("page", "")).lower().strip()
     stats = compute_overview_stats()
 
     def match(*keywords):
         return any(k in msg for k in keywords)
 
-    if match("churn rate", "churn rate?", "what is the churn"):
-        reply = f"The current churn rate is {stats['churn_rate']} across {stats['total_customers']:,} tracked accounts."
+    reply = ""
+    action = None
+    chips = []
+
+    # 1. Page Context Answers
+    if match("what page", "where am i", "what can i do here", "help me with this page"):
+        if "/overview" in page:
+            reply = "You are on the **Overview** page. Here you can see top-level KPIs, recent predictions, and churn segments."
+            chips = ["What is the churn rate?", "Show model accuracy"]
+        elif "/customers" in page:
+            reply = "You are on the **Customers** page. You can search, filter, and paginate through all 7,043 customers here, and export them to CSV."
+            chips = ["High risk customers?", "Revenue at risk?"]
+        elif "/reports" in page:
+            reply = "You are on the **Reports** page. Here you can analyze the Confusion Matrix, Feature Importance, and export PDF reports."
+            chips = ["What causes churn?", "What is precision?"]
+        elif "/config" in page:
+            reply = "You are on the **Model Config** page. This shows hyperparameter details and allows you to retrain the ML model."
+            chips = ["Retrain model", "Last trained date?"]
+        elif "/insights" in page:
+            reply = "You are on the **Audience Insights** page. This ranks the top 20 highest-risk customers and calculates Lifetime Value (LTV)."
+            action = {"label": "Go to Predictor", "link": "/predict"}
+        elif "/predict" in page or page == "/":
+            reply = "You are on the **Churn Predictor**. Fill out the customer details and click Predict to see the AI's risk assessment in real-time."
+        else:
+            reply = f"You are currently at the `{page}` page. How can I help you navigate?"
+
+    # 2. Command: Clear Chat
+    elif match("clear chat", "reset chat", "clear history"):
+        return jsonify({"reply": "_clear_chat_"})
+
+    # 3. Standard Questions
+    elif match("churn rate", "churn rate?", "what is the churn"):
+        reply = f"The current churn rate is **{stats['churn_rate']}** across **{stats['total_customers']:,}** tracked accounts."
+        chips = ["How many customers?", "Revenue at risk?"]
+        
     elif match("accuracy", "accurate", "model performance", "how good"):
-        reply = (f"The model achieves {stats['model_accuracy']} accuracy with a ROC-AUC of {stats['model_roc_auc']}. "
-                 f"Precision: {stats['precision']}, Recall: {stats['recall']}, F1: {stats['f1']}.")
+        reply = (f"The model achieves **{stats['model_accuracy']}** accuracy with a ROC-AUC of **{stats['model_roc_auc']}**.\n\n"
+                 f"• **Precision**: {stats['precision']}\n"
+                 f"• **Recall**: {stats['recall']}\n"
+                 f"• **F1 Score**: {stats['f1']}")
+        action = {"label": "View Full Reports", "link": "/reports"}
+        chips = ["What is precision?", "What is recall?"]
+        
     elif match("customers", "how many", "total", "accounts"):
-        reply = f"ChurnGuard AI is tracking {stats['total_customers']:,} customers. {stats['churn_count']} have churned, giving a retention rate of {stats['retention_rate']}."
+        reply = f"ChurnGuard AI is tracking **{stats['total_customers']:,}** customers. **{stats['churn_count']}** have churned, giving a retention rate of **{stats['retention_rate']}**."
+        action = {"label": "View All Customers", "link": "/customers"}
+        chips = ["High risk customers?", "Top risk factors?"]
+        
     elif match("revenue", "money", "risk", "loss"):
-        reply = f"Estimated revenue at risk from churned customers: {stats['revenue_at_risk']} (based on average monthly charges of {stats['avg_monthly_charges']})."
-    elif match("top factor", "cause", "feature", "importance", "why churn"):
+        reply = f"Estimated revenue at risk from churned customers: **{stats['revenue_at_risk']}** (based on avg monthly charges of {stats['avg_monthly_charges']})."
+        
+    elif match("top factor", "cause", "feature", "importance", "why churn", "risk factor"):
         fi = compute_feature_importance()
         if fi:
             top = fi[:3]
-            reply = "The top factors driving churn predictions are: " + ", ".join(f"{f['name']} ({f['pct']}%)" for f in top) + ". Tenure and contract type are the strongest signals."
+            reply = "The top factors driving churn predictions are:\n" + "".join(f"- **{f['name']}** ({f['pct']}%)\n" for f in top)
         else:
             reply = "Retrain the model to see feature importance data."
+        action = {"label": "View Feature Importance", "link": "/config"}
+            
     elif match("high risk", "at risk", "risky", "who"):
         segs = compute_segments()
-        reply = f"There are {segs['at_risk']:,} at-risk customers currently. You can view them in the Audience Insights page."
+        reply = f"There are **{segs['at_risk']:,}** at-risk customers currently."
+        action = {"label": "View Audience Insights", "link": "/insights"}
+        
+    elif match("predict", "run prediction", "make a prediction", "test customer"):
+        reply = "Sure! Let's head over to the Predictor page where you can input customer details."
+        action = {"label": "Go to Predictor", "link": "/predict"}
+        
     elif match("retrain", "train", "update model"):
-        reply = "To retrain the model on fresh data, run `py main.py` in your terminal. This runs the full preprocessing + training + evaluation pipeline."
+        reply = "To retrain the model on fresh data, you can visit the **Model Config** page, or run `py main.py` in your terminal for a full pipeline execution."
+        action = {"label": "Go to Model Config", "link": "/config"}
+        
     elif match("hello", "hi ", "hey", "greet"):
-        reply = "Hello! I'm ChurnGuard AI. Ask me about churn rates, model accuracy, customer counts, or top risk factors!"
+        reply = "Hello! 👋 I'm **ChurnGuard AI**. Ask me about churn rates, model accuracy, customer counts, or top risk factors!"
+        chips = ["What is the churn rate?", "Model accuracy?", "Top risk factors?", "What page am I on?"]
+        
     elif match("help", "what can you", "commands"):
-        reply = ("I can answer questions about: churn rate, model accuracy, total customers, revenue at risk, "
-                 "top churn factors, high-risk segments, and how to retrain the model.")
+        reply = ("I can answer questions and navigate the site! Try asking:\n"
+                 "- *What is the churn rate?*\n"
+                 "- *How accurate is the model?*\n"
+                 "- *Who are the high risk customers?*\n"
+                 "- *What page am I on?*\n"
+                 "- *Predict a customer*\n"
+                 "- *Clear chat*")
+                 
     elif match("precision"):
-        reply = f"Model precision is {stats['precision']} — meaning that many predicted churn cases are actual churners."
+        reply = f"Model precision is **{stats['precision']}** — meaning {stats['precision']} of predicted churn cases are *actual* churners."
+        
     elif match("recall"):
-        reply = f"Model recall is {stats['recall']} — meaning the model captures that many actual churn cases."
+        reply = f"Model recall is **{stats['recall']}** — meaning the model successfully captures {stats['recall']} of all *actual* churn cases."
+        
     elif match("last trained", "when trained", "when was"):
-        reply = f"The model was last trained on {metadata.get('last_trained', 'an unknown date')} using {metadata.get('data_shape', 'N/A')} rows."
+        reply = f"The model was last trained on **{metadata.get('last_trained', 'an unknown date')}** using **{metadata.get('data_shape', 'N/A')}** rows."
+        
     else:
-        reply = ("I'm not sure about that yet! Try asking: 'What is the churn rate?', "
-                 "'How accurate is the model?', 'How many customers?', or 'What causes churn?'")
+        reply = ("I'm not sure about that yet! 🤔 Try asking:\n- *What is the churn rate?*\n- *How accurate is the model?*\n- *What page am I on?*")
+        chips = ["What is the churn rate?", "Help"]
 
-    return jsonify({"reply": reply})
+    response = {"reply": reply}
+    if action:
+        response["action"] = action
+    if chips:
+        response["chips"] = chips
+
+    return jsonify(response)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

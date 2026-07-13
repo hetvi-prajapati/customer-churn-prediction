@@ -280,6 +280,22 @@
       sendChat();
     }
 
+    function formatMarkdown(text) {
+      if (text === "_clear_chat_") return text;
+      // Bold
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Italic
+      text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      // Code
+      text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+      // Lists
+      text = text.replace(/- (.*?)(\n|$)/g, '<li>$1</li>');
+      text = text.replace(/(<li>.*<\/li>)/g, '<ul style="margin: 8px 0; padding-left: 20px;">$1</ul>');
+      // Newlines
+      text = text.replace(/\n/g, '<br>');
+      return text;
+    }
+
     async function sendChat() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
@@ -287,31 +303,78 @@
       input.value = '';
 
       appendMsg(msg, 'user');
-
-      // Fade chips after first message
       document.getElementById('chatChips').style.display = 'none';
+
+      // Show typing indicator
+      const msgs = document.getElementById('chatMessages');
+      const typingEl = document.createElement('div');
+      typingEl.className = 'chat-msg bot typing-indicator';
+      typingEl.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+      msgs.appendChild(typingEl);
+      msgs.scrollTop = msgs.scrollHeight;
 
       // Call API
       try {
         const res = await fetch('/api/chatbot', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({message: msg})
+          body: JSON.stringify({
+            message: msg,
+            page: window.location.pathname
+          })
         });
         const data = await res.json();
-        appendMsg(data.reply || "I'm not sure about that. Try asking about churn rate, accuracy, or customer count.", 'bot');
+        
+        // Remove typing indicator with a tiny artificial delay for realism
+        setTimeout(() => {
+          typingEl.remove();
+          
+          if (data.reply === "_clear_chat_") {
+            msgs.innerHTML = '<div class="chat-msg bot">Chat history cleared. How can I help you?</div>';
+          } else {
+            appendMsg(data.reply || "I'm not sure about that. Try asking about churn rate.", 'bot', data.action);
+          }
+          
+          if (data.chips && data.chips.length > 0) {
+            updateChips(data.chips);
+          }
+        }, 600);
       } catch(_) {
+        typingEl.remove();
         appendMsg("Connection error. Please try again.", 'bot');
       }
     }
 
-    function appendMsg(text, role) {
+    function appendMsg(text, role, action = null) {
       const msgs = document.getElementById('chatMessages');
       const el = document.createElement('div');
       el.className = `chat-msg ${role}`;
-      el.textContent = text;
+      el.innerHTML = formatMarkdown(text);
+      
+      if (action) {
+        const btn = document.createElement('a');
+        btn.href = action.link;
+        btn.className = 'chat-action-btn';
+        btn.textContent = action.label;
+        btn.innerHTML += ' <i class="fas fa-arrow-right" style="font-size:0.8em; margin-left:5px"></i>';
+        el.appendChild(btn);
+      }
+      
       msgs.appendChild(el);
       msgs.scrollTop = msgs.scrollHeight;
+    }
+    
+    function updateChips(chipTexts) {
+      const chipsContainer = document.getElementById('chatChips');
+      chipsContainer.innerHTML = '';
+      chipTexts.forEach(text => {
+        const span = document.createElement('span');
+        span.className = 'chat-chip';
+        span.textContent = text;
+        span.onclick = function() { sendChip(this); };
+        chipsContainer.appendChild(span);
+      });
+      chipsContainer.style.display = 'flex';
     }
   </script>
 
