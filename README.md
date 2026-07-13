@@ -1,19 +1,20 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=700&size=30&pause=1000&color=00D4FF&center=true&vCenter=true&width=800&lines=ChurnGuard+AI;Enterprise+Customer+Retention;Predictive+Machine+Learning+Pipeline;Real-Time+Analytics+Dashboard" alt="Typing SVG" />
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&size=32&pause=1000&color=00D4FF&center=true&vCenter=true&width=800&lines=ChurnGuard+AI;Enterprise+Customer+Retention;Predictive+Machine+Learning+Pipeline;Real-Time+Analytics+Dashboard" alt="Typing SVG" />
 
 **An enterprise-grade, end-to-end Machine Learning web application designed to predict customer churn and provide actionable retention intelligence.**
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0.3-black.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Scikit-Learn](https://img.shields.io/badge/Scikit_Learn-1.4.2-orange.svg?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
-[![Pandas](https://img.shields.io/badge/Pandas-2.2.2-150458.svg?style=for-the-badge&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
-[![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)]()
-[![CSS3](https://img.shields.io/badge/CSS3-1572B6.svg?style=for-the-badge&logo=css3&logoColor=white)]()
-[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=for-the-badge&logo=javascript&logoColor=black)]()
-
-[![Status](https://img.shields.io/badge/Status-Production_Ready-success.svg?style=for-the-badge)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.9+-00D4FF.svg?style=for-the-badge&logo=python&logoColor=white&labelColor=0f172a)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0.3-00D4FF.svg?style=for-the-badge&logo=flask&logoColor=white&labelColor=0f172a)](https://flask.palletsprojects.com/)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit_Learn-1.4.2-00D4FF.svg?style=for-the-badge&logo=scikit-learn&logoColor=white&labelColor=0f172a)](https://scikit-learn.org/)
+[![Pandas](https://img.shields.io/badge/Pandas-2.2.2-00D4FF.svg?style=for-the-badge&logo=pandas&logoColor=white&labelColor=0f172a)](https://pandas.pydata.org/)
+<br>
+[![HTML5](https://img.shields.io/badge/HTML5-00D4FF.svg?style=for-the-badge&logo=html5&logoColor=white&labelColor=0f172a)]()
+[![CSS3](https://img.shields.io/badge/CSS3-00D4FF.svg?style=for-the-badge&logo=css3&logoColor=white&labelColor=0f172a)]()
+[![JavaScript](https://img.shields.io/badge/JavaScript-00D4FF.svg?style=for-the-badge&logo=javascript&logoColor=white&labelColor=0f172a)]()
+<br><br>
+[![Status](https://img.shields.io/badge/Status-Production_Ready-00D4FF.svg?style=for-the-badge&labelColor=0f172a)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-00D4FF.svg?style=for-the-badge&labelColor=0f172a)](https://opensource.org/licenses/MIT)
 
 </div>
 
@@ -32,6 +33,40 @@ ChurnGuard AI is a comprehensive **Decision Support System (DSS)** integrating a
 - 🔗 **Dynamic JSON Bridge:** The frontend and backend are decoupled. Python ML scripts export live metadata and evaluation metrics to JSON, which the Flask server dynamically renders in the UI.
 - 🤖 **Interactive AI Assistant:** A built-in, context-aware Chatbot that can answer questions about model accuracy, navigate the dashboard, and provide quick suggestions.
 - 🛡️ **Defensive Programming:** Implements robust `pandas.reindex` logic to ensure the web form never crashes the ML model, even if input features are missing.
+
+---
+
+## 🛑 CORE ARCHITECTURE (THE PIPELINE)
+
+The system is built on a decoupled architecture where the Machine Learning pipeline operates independently of the Flask web server, connected via JSON metadata bridges.
+
+```mermaid
+graph TD
+    %% Custom Neon-Cyan & Navy Dark Mode Styling %%
+    classDef default fill:#0f172a,stroke:#00D4FF,stroke-width:2px,color:#ffffff,rx:8px,ry:8px;
+    classDef accent fill:#00D4FF,stroke:#0f172a,stroke-width:2px,color:#000000,rx:8px,ry:8px,font-weight:bold;
+    classDef database fill:#020617,stroke:#00D4FF,stroke-width:2px,color:#00D4FF;
+
+    subgraph Data Pipeline
+        A[(Raw Data: churn.csv)]:::database --> B[Data Preprocessing<br/>handling missing, encoding]
+        B --> C[Cleaned Data<br/>clean_churn.csv]:::database
+    end
+
+    subgraph Machine Learning Engine
+        C --> D[Model Training<br/>Random Forest]
+        D --> E{Hyperparameter<br/>Tuning}
+        E --> F((Trained Model<br/>churn_model.pkl)):::accent
+        D --> G[Model Evaluation<br/>Accuracy, ROC-AUC, F1]
+        G --> H[/Metrics Bridge<br/>metrics.json/]:::database
+    end
+
+    subgraph Web Application Frontend
+        F --> I[Flask Backend API]
+        H --> I
+        I --> J[Jinja2 Dynamic Templates]
+        J --> K[Interactive Dashboard<br/>Chart.js & AI Chatbot]:::accent
+    end
+```
 
 ---
 
@@ -78,63 +113,6 @@ Launch the Flask dashboard to interact with the predictive engine:
 python app/app.py
 ```
 > 🌐 Navigate to `http://localhost:5001` in your browser.
-
----
-
-## 🛑 CORE ARCHITECTURE (THE PIPELINE)
-
-The system is built on a decoupled architecture where the Machine Learning pipeline operates independently of the Flask web server, connected via JSON metadata bridges.
-
-```mermaid
-graph TD
-    subgraph Data Pipeline
-        A[(Raw Data: churn.csv)] --> B[Data Preprocessing<br/>handling missing, encoding]
-        B --> C[Cleaned Data<br/>clean_churn.csv]
-    end
-
-    subgraph Machine Learning Engine
-        C --> D[Model Training<br/>Random Forest]
-        D --> E{Hyperparameter<br/>Tuning}
-        E --> F((Trained Model<br/>churn_model.pkl))
-        D --> G[Model Evaluation<br/>Accuracy, ROC-AUC, F1]
-        G --> H[/Metrics Bridge<br/>metrics.json/]
-    end
-
-    subgraph Web Application Frontend
-        F --> I[Flask Backend API]
-        H --> I
-        I --> J[Jinja2 Dynamic Templates]
-        J --> K[Interactive Dashboard<br/>Chart.js & AI Chatbot]
-    end
-```
-
-### 📂 Directory Structure
-
-```text
-CUSTOMER-CHURN-PREDICTION/
-├── app/
-│   ├── app.py                  # Main Flask Web Server & API Routing
-│   ├── templates/              # Jinja2 Frontend Architecture
-│   └── static/css/main.css     # Global Design System
-│
-├── data/
-│   ├── raw/                    # Original dataset (e.g., churn.csv)
-│   └── processed/              # Cleaned, one-hot encoded numeric data
-│
-├── models/
-│   ├── churn_model.pkl         # Pickled Random Forest Classifier
-│   ├── metrics.json            # Live evaluation metrics
-│   └── model_metadata.json     # Audit trail for training timestamps
-│
-├── src/                        # Machine Learning Pipeline
-│   ├── data_preprocessing.py   # Cleans data & handles missing values
-│   ├── train_model.py          # Executes RF algorithm & exports metadata
-│   └── evaluate_model.py       # Validates unseen data & exports metrics
-│
-├── main.py                     # Entry point for ML Pipeline execution
-├── requirements.txt            # Python Dependencies
-└── LICENSE                     # MIT License
-```
 
 ---
 
